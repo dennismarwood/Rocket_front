@@ -1,0 +1,153 @@
+Each time that cargo is run it will look in /target to check what has changed. Each instance of cargo will generate its own id, of some kind, each time
+it is run. This is a problem when you run both VScode's rust-analyzer and cargo watch from a docker image. They will trip over each other and spend forever
+recompiling the code because they each think everything is out of date.
+
+https://users.rust-lang.org/t/neovim-vs-blocking-waiting-for-file-lock-on-build-directory/72188/4
+
+A solution is to have each of the cargo instances use different directories.
+
+You can change where rust-analyzer stores it's data
+https://github.com/rust-lang/rust-analyzer/blob/master/docs/user/generated_config.adoc
+settings.json in vscode
+"rust-analyzer.checkOnSave.enable": true, <-- set to false and you will never get cargo check to run on save
+"rust-analyzer.checkOnSave.overrideCommand": ["cargo", "check", "--quiet", "--workspace", "--message-format=json", "--all-targets", "--target-dir", "target/local"],
+
+Or you can have the docker image set a variable to change where "its" cargo stores data.
+https://doc.rust-lang.org/cargo/commands/cargo-check.html#output-options
+You can set the variable in the Dockerfile
+ENV CARGO_TARGET_DIR=docker_target
+Or you can set it when you create the container
+docker run -p 8000:8000 --rm -it --mount type=bind,source="$(pwd)",target=/app --env CARGO_TARGET_DIR=docker_target --name front1 front cargo watch -x 'run --bin front'
+If you change it in the image/container, you must include an entry in .gitignore to exclude the file cargo watch's list of monitored files. Otherwise you will
+get a feed back loop.
+
+My preference is to leave my local machine in its default state so that it does not cause me headaches down the road with debugging or something in the future
+when I have forgotten about this config.
+
+
+docker stop front1
+
+docker run -p 8000:8000 --rm -it --mount type=bind,source="$(pwd)",target=/app --name front front cargo watch -x 'run --bin front'
+
+https://forums.docker.com/t/docker-run-cannot-be-killed-with-ctrl-c/13108
+
+To build for development:
+docker build -t front:development -f development.Dockerfile .
+
+And then create a container with:
+docker run -p 8000:8000 --rm -itd --mount type=bind,source="$(pwd)",target=/app --name development_front front:development
+
+To build for release:
+docker build -t front:release -f release.Dockerfile .
+
+
+To export the release:
+docker export --output="release_front2.tar" release_front | gzip > release_front.tgz
+
+
+Copy release_front.tgz to production environment /home/dennis/gits/server/docker_compose/front
+
+On production server-
+Stop front container:
+~/gits/server/docker_compose$ docker-compose stop front
+
+Unzip:
+~/gits/server/docker_compose/front$ gzip -d release_front.tg
+
+Stop the container:
+docker-compose stop front
+
+Remove the container:
+docker container rm front
+
+Remove the image:
+docker image rm front
+
+Import the container:
+~/gits/server/docker_compose/front$ docker import release_front.tar front:latest
+
+At this point there is an image for front, but no container. Have docker compose build one with:
+docker-compose up front
+
+You need to run the container before it will show up in docker container ls -a
+docker exec -d brave_sanderson ./front
+
+docker export <dockernameortag> | gzip > mycontainer.tgz
+
+
+On server
+gzip -d release_front.tar.gz
+docker import release_front.tar front:latest (This will create an image, that image is started by compose)
+
+
+
+To create the image on a dev machine and then load it into a production machine:
+Note: Be sure to use the .Dockerfile directly. Do not use the release docker-compose.yml file.
+
+On dev box -
+Build the image:
+~/Homepage/front docker build -t front:release -f release.Dockerfile .
+
+Save / duplicate the image:
+docker save front:release | gzip > front_release.tar.gz
+
+Copy the .tar.gz over to the new box gits/server/front
+
+On the production box - 
+Load the image into docker:
+docker load < front_release.tar.gz
+
+Reload the image:
+docker-compose up -d --force-recreate front
+
+
+Connect to docker db from local machine mysql:
+--host=localhost --port=8002 --protocol=TCP -uroot -p
+
+Create a db dump:
+mysqldump --host=localhost --port=8002 --protocol=TCP -uroot -p homepage > mydump.sql
+
+When troubleshooting a "release" build (such as /home/dennis/Homepage/common/release) and you want to test it against some 
+dev build (such as dev_db), you need to put the release container on the same network as the one generated for the dev_db.
+Start dev_db with develpment/docker-compose.yml file.
+Start rel_back with release/docker-compose.yml file.
+Connect the running rel_back to the running dev_db network -
+    docker network connect development_default rel_back
+
+
+
+
+Step 1/10 : FROM rust:1.62 AS builder
+ ---> 547cdc64b2a8
+Step 2/10 : WORKDIR /app
+ ---> Running in 2cb4c1f03890
+Removing intermediate container 2cb4c1f03890
+ ---> 3301443f65ac
+Step 3/10 : COPY ./Cargo.toml ./Cargo.toml
+ ---> c887d3abd1ce
+Step 4/10 : COPY ./src ./src
+ ---> 133728c827f1
+Step 5/10 : COPY ./Rocket.toml ./Rocket.toml
+ ---> 87015990413f
+Step 6/10 : RUN cargo build --release
+ ---> Running in 64502bcb1bbd
+
+compiling..
+
+Removing intermediate container 64502bcb1bbd
+ ---> 17e495b2da73
+Step 7/10 : RUN cargo install diesel_cli --version 1.4.1 --no-default-features --features mysql
+ ---> Running in 621ceab59c7e
+
+compiling...
+
+Removing intermediate container 621ceab59c7e
+ ---> 0ae919b6706e
+Step 8/10 : FROM debian:buster-slim
+ ---> 5cbfa61a3abc
+Step 9/10 : COPY --from=builder /app/Rocket.toml /Rocket.toml
+ ---> fecae8f8a0f5
+Step 10/10 : COPY --from=builder /app/target/release/back /back
+ ---> 8e100a27e885
+Successfully built 8e100a27e885
+Successfully tagged back:rel
