@@ -115,39 +115,19 @@ Connect the running rel_back to the running dev_db network -
     docker network connect development_default rel_back
 
 
+#NOTES
+#From the project folder, build an image with:
+#docker build -t front:development -f development.Dockerfile .
 
+#And then create a container with:
+#docker run -p 8000:8000 --rm -itd --mount type=bind,source="$(pwd)",target=/app --name development_front front:development
 
-Step 1/10 : FROM rust:1.62 AS builder
- ---> 547cdc64b2a8
-Step 2/10 : WORKDIR /app
- ---> Running in 2cb4c1f03890
-Removing intermediate container 2cb4c1f03890
- ---> 3301443f65ac
-Step 3/10 : COPY ./Cargo.toml ./Cargo.toml
- ---> c887d3abd1ce
-Step 4/10 : COPY ./src ./src
- ---> 133728c827f1
-Step 5/10 : COPY ./Rocket.toml ./Rocket.toml
- ---> 87015990413f
-Step 6/10 : RUN cargo build --release
- ---> Running in 64502bcb1bbd
+#Start cargo watch and connect to the container with:
+#docker exec -it development_front cargo watch -x 'run --bin front'
 
-compiling..
+#When you are done you can stop the container with:
+#docker stop development_front
 
-Removing intermediate container 64502bcb1bbd
- ---> 17e495b2da73
-Step 7/10 : RUN cargo install diesel_cli --version 1.4.1 --no-default-features --features mysql
- ---> Running in 621ceab59c7e
+#DATABASE_URL="mysql://rocket:your_chosen_password@example.com/rocket_app"
 
-compiling...
-
-Removing intermediate container 621ceab59c7e
- ---> 0ae919b6706e
-Step 8/10 : FROM debian:buster-slim
- ---> 5cbfa61a3abc
-Step 9/10 : COPY --from=builder /app/Rocket.toml /Rocket.toml
- ---> fecae8f8a0f5
-Step 10/10 : COPY --from=builder /app/target/release/back /back
- ---> 8e100a27e885
-Successfully built 8e100a27e885
-Successfully tagged back:rel
+Get the network your container is using docker container inspect dev_back --format '{{range $net,$v := .NetworkSettings.Networks}}{{printf "%s\n" $net}}{{end}}'

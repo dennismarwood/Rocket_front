@@ -6,6 +6,7 @@ mod auth;
 use auth::BasicAuth;
 use rocket::{Build, Rocket, response::status};
 use rocket::serde::json::{Json, Value, json, self};
+extern crate reqwest;
 //use rocket::http::Status;
 //use rocket::request::{Request, FromRequest, Outcome};
 
@@ -36,8 +37,17 @@ fn index() -> &'static str {
 }
 
 #[get("/blog")]
-fn blog() -> &'static str {
-    "Blog"
+pub async fn blog() -> Result<String, String> {
+    //match reqwest::get("http://localhost:8001/api").await//.unwrap().text().await;
+    let mut my_url : reqwest::Url = reqwest::Url::parse("http://back").unwrap();
+    my_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
+    match reqwest::get(my_url).await
+    {
+        Ok(x) => Ok(format!("{}: {:?}", x.status() , x.text().await)),
+        Err(e) => Err(e.to_string()),
+    }
+    //let x = json_response_from_backend.unwrap();
+    //String::from("Blog")
 }
 
 #[get("/hire/<_..>")]
