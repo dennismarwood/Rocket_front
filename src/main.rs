@@ -3,7 +3,7 @@ extern crate reqwest;
 
 #[get("/")] //This is a macro attribute
 fn index() -> &'static str {
-    "Hello, from Rocket!!!~\n"
+    "Dennis Marwood\n"
 }
 
 #[get("/blog")]
