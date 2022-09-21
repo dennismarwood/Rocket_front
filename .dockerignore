@@ -1,0 +1,7 @@
+/target
+/docker_target
+/.git
+Cargo.lock
+**/s-gbxwfgjx2p-qouw72.lock
+**/s-gbxxeat0ay-1tjai7z.lock
+Notes.txt
