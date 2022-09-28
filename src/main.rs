@@ -1,6 +1,12 @@
 #[macro_use] extern crate rocket;
 extern crate reqwest;
 
+mod login;
+use login::routes::*;
+
+mod user;
+use user::routes::*;
+
 #[get("/")] //This is a macro attribute
 fn index() -> &'static str {
     "Dennis Marwood\n"
@@ -40,6 +46,8 @@ fn unprocessable_entity() -> Value {
 fn rocket() -> _ { //Built the rocket here
     rocket::build()
         .mount("/", routes![index, blog])
+        .mount("/user", routes![get_user])
+        .mount("/login", routes![login::routes::login, login::routes::process_login])
         .mount("/forwards_example", routes![])
         //.register("/udemy/2/5", catchers![not_found, unauthorized, unprocessable_entity])
 }
