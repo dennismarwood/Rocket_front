@@ -2,7 +2,6 @@
 extern crate reqwest;
 
 mod login;
-use login::routes::*;
 
 mod user;
 use user::routes::*;
