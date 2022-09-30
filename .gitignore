@@ -2,6 +2,8 @@
 
 !src/
 !src/*
+!templates/
+!templates/*
 !.dockerignore
 !.gitignore
 !Cargo.toml
