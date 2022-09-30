@@ -1,5 +1,8 @@
 #[macro_use] extern crate rocket;
+extern crate rocket_dyn_templates;
+use rocket_dyn_templates::{Template};
 extern crate reqwest;
+extern crate tera;
 
 mod login;
 
@@ -48,5 +51,6 @@ fn rocket() -> _ { //Built the rocket here
         .mount("/user", routes![get_user])
         .mount("/login", routes![login::routes::login, login::routes::process_login])
         .mount("/forwards_example", routes![])
+        .attach(Template::fairing())
         //.register("/udemy/2/5", catchers![not_found, unauthorized, unprocessable_entity])
 }

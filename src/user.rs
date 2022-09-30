@@ -1,10 +1,11 @@
-use rocket::serde::json::{Value};
+use rocket::serde::json::{Value, json};
 use rocket::response::{status};
 use rocket::response::content::RawHtml;
 use rocket::form::Form;
 use serde::Serialize;
 use rocket::http::{CookieJar, Cookie, SameSite};
 use reqwest::{cookie::Jar};
+use rocket_dyn_templates::{Template, context};
 
 #[derive(FromForm, Serialize)]
 pub struct User {
@@ -63,7 +64,7 @@ pub mod routes {
     }
 
     #[get("/")]
-    pub async fn get_user(jar: &CookieJar<'_>) -> RawHtml<String> {   
+    pub async fn get_user(jar: &CookieJar<'_>) -> Template {//RawHtml<String> {   
 
         let mut my_url : reqwest::Url = reqwest::Url::parse("http://back/user").unwrap();
         my_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
@@ -75,14 +76,18 @@ pub mod routes {
                 Ok(response) => {
                     match response.status() {
                         reqwest::StatusCode::OK => {
-                            let t = response.text().await.unwrap();
-                            RawHtml(t)
+                            let user: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
+                            println!("{:?}", user);
+                            Template::render("user", context!{user})
+                            //RawHtml(t)
                         }
                         _ => {
-                            RawHtml(response.text().await.unwrap())}
+                            //RawHtml(response.text().await.unwrap())}
+                            Template::render("index", context! {})
+                        }
                     }
                 },
-                Err(e) => RawHtml(e.to_string()),
+                Err(e) => Template::render("index", context! {}),//RawHtml(e.to_string()),
             }
     }
 }
