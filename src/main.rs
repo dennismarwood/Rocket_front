@@ -59,6 +59,6 @@ fn rocket() -> _ { //Built the rocket here
         .mount("/logout", routes![logout::routes::logout])
         .mount("/forwards_example", routes![])
         .attach(Template::fairing())
-        .register("/", catchers![default_catcher])
+        //.register("/", catchers![default_catcher])
         //.register("/udemy/2/5", catchers![not_found, unauthorized, unprocessable_entity])
 }
