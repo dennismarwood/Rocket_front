@@ -90,7 +90,7 @@ pub mod routes {
                         reqwest::StatusCode::UNAUTHORIZED => {
                             Err(Redirect::to(uri!("/login")))
                         }
-                        _ => {
+                        _ => { //Backend returned status code other than 500, 401
                             let response: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
                             Ok(Template::render("error/default", context! {response}))
                             

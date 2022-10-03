@@ -13,7 +13,7 @@ pub mod routes {
     }
 
     #[catch(500)]
-    pub fn five_hundread(status: Status, request: &Request) -> Template { 
+    pub fn five_hundread(status: Status, request: &Request) -> Template {
         println!("\n\n{:?}", status);
         println!("\n\n{:?}", request);
         Template::render("error/default", context! {})
