@@ -34,7 +34,6 @@ pub mod routes {
                 <input type="submit" value="Submit">
             </form>
         "#);
-        //todo!("will impliment later")
         RawHtml(response)
     }
 

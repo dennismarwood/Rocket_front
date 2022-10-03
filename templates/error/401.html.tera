@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>401 - tera</title>
+  </head>
+  <body>
+    <h1>401: Custom 401.</h1>
+    The page at {{ uri }} does not exist!
+  </body>
+</html>

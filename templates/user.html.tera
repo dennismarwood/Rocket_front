@@ -11,7 +11,6 @@
     <p class="important">
       Welcome to my awesome homepage.
     </p>
-    {{__tera_context}}
     <ul>
         {% for k, v in user %}
             <li>{{k | capitalize}}: {{v}}</li>

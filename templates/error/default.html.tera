@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Errors</title>
+  </head>
+  <body>
+    <h1>The following errors occured:</h1>
+    <h2>Error:</h2>
+    {% for error in response["errors"] %}
+      {% for k, v in error%}
+        {{k | capitalize}}: {{v}}<br>
+      {% endfor %}
+    {% endfor %}
+  </body>
+</html>

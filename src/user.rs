@@ -1,11 +1,13 @@
 use rocket::serde::json::{Value, json};
-use rocket::response::{status};
+use rocket::response::{status, Redirect};
 use rocket::response::content::RawHtml;
 use rocket::form::Form;
 use serde::Serialize;
-use rocket::http::{CookieJar, Cookie, SameSite};
+use rocket::http::{CookieJar, Cookie, SameSite, Status};
 use reqwest::{cookie::Jar};
 use rocket_dyn_templates::{Template, context};
+use rocket::request::local_cache;
+use rocket::Request;
 
 #[derive(FromForm, Serialize)]
 pub struct User {
@@ -64,12 +66,14 @@ pub mod routes {
     }
 
     #[get("/")]
-    pub async fn get_user(jar: &CookieJar<'_>) -> Template {//RawHtml<String> {   
+    pub async fn get_user(jar: &CookieJar<'_>) -> Result<Template, Redirect> {//RawHtml<String> {   
 
         let mut my_url : reqwest::Url = reqwest::Url::parse("http://back/user").unwrap();
         my_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
 
         let my_client = reqwest_client(jar).unwrap();
+
+        //let mut map = serde_json::Map::new();
 
         match my_client.get(my_url).send().await
             {
@@ -77,17 +81,26 @@ pub mod routes {
                     match response.status() {
                         reqwest::StatusCode::OK => {
                             let user: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
-                            println!("{:?}", user);
-                            Template::render("user", context!{user})
-                            //RawHtml(t)
+                            Ok(Template::render("user", context!{user}))
+                        }
+                        reqwest::StatusCode::INTERNAL_SERVER_ERROR => { //This is when the back end returns a 500
+                            let response: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
+                            Ok(Template::render("error/500", context! {response}))
+                        }
+                        reqwest::StatusCode::UNAUTHORIZED => {
+                            Err(Redirect::to(uri!("/login")))
                         }
                         _ => {
-                            //RawHtml(response.text().await.unwrap())}
-                            Template::render("index", context! {})
+                            let response: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
+                            Ok(Template::render("error/default", context! {response}))
+                            
                         }
                     }
                 },
-                Err(e) => Template::render("index", context! {}),//RawHtml(e.to_string()),
+                Err(e) => { //This is when the front end returns a 500
+                    let response = e.to_string();
+                    Ok(Template::render("error/500", context! {response}))
+                }
             }
     }
 }

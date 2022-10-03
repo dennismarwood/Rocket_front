@@ -4,6 +4,8 @@
 !src/*
 !templates/
 !templates/*
+!templates/error/
+!templates/error/*
 !.dockerignore
 !.gitignore
 !Cargo.toml

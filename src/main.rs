@@ -6,8 +6,14 @@ extern crate tera;
 
 mod login;
 
+mod logout;
+use logout::routes::*;
+
 mod user;
 use user::routes::*;
+
+mod catchers;
+use catchers::routes::*;
 
 #[get("/")] //This is a macro attribute
 fn index() -> &'static str {
@@ -50,7 +56,9 @@ fn rocket() -> _ { //Built the rocket here
         .mount("/", routes![index, blog])
         .mount("/user", routes![get_user])
         .mount("/login", routes![login::routes::login, login::routes::process_login])
+        .mount("/logout", routes![logout::routes::logout])
         .mount("/forwards_example", routes![])
         .attach(Template::fairing())
+        .register("/", catchers![default_catcher])
         //.register("/udemy/2/5", catchers![not_found, unauthorized, unprocessable_entity])
 }
