@@ -1,13 +1,14 @@
 use rocket::serde::json::{Value, json};
-use rocket::response::{status, Redirect};
+use rocket::response::{status, Redirect, Flash};
 use rocket::response::content::RawHtml;
 use rocket::form::Form;
 use serde::Serialize;
 use rocket::http::{CookieJar, Cookie, SameSite, Status};
 use reqwest::{cookie::Jar};
 use rocket_dyn_templates::{Template, context};
-use rocket::request::local_cache;
+use rocket::request::{local_cache, FlashMessage};
 use rocket::Request;
+
 
 #[derive(FromForm, Serialize)]
 pub struct User {
@@ -66,7 +67,7 @@ pub mod routes {
     }
 
     #[get("/")]
-    pub async fn get_user(jar: &CookieJar<'_>) -> Result<Template, Redirect> {//RawHtml<String> {   
+    pub async fn get_user(jar: &CookieJar<'_>) -> Result<Template, Flash<Redirect>> {//RawHtml<String> {   
 
         let mut my_url : reqwest::Url = reqwest::Url::parse("http://back/user").unwrap();
         my_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
@@ -88,7 +89,8 @@ pub mod routes {
                             Ok(Template::render("error/500", context! {response}))
                         }
                         reqwest::StatusCode::UNAUTHORIZED => {
-                            Err(Redirect::to(uri!("/login")))
+                            //Err(Redirect::to(uri!("/login")))
+                            Err(Flash::error(Redirect::to("/login"), "You must be logged in to view your user profile."))
                         }
                         _ => { //Backend returned status code other than 500, 401
                             let response: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();

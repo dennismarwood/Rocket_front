@@ -4,6 +4,7 @@ use rocket::response::content::RawHtml;
 use rocket::form::Form;
 use serde::Serialize;
 use rocket::http::{Cookie, CookieJar, SameSite};
+use rocket::request::FlashMessage;
 
 #[derive(FromForm, Serialize)]
 pub struct LoginCredentials {
@@ -15,7 +16,7 @@ pub mod routes {
     use super::*;
 
     #[get("/")]
-    pub async fn login() -> RawHtml<String> {
+    pub async fn login(flash: Option<FlashMessage<'_>>) -> RawHtml<String> {
         /*
         Provide a form with email and pass.
         When user submits form, take data and create reqwest to back end.
@@ -24,6 +25,14 @@ pub mod routes {
             The response code determines success or fail.
         Store cookie and redirect or display error message to user.
         */
+        let x = match flash {
+            Some(x) => format!("{}<br>", x.message()),
+            None => "".to_string(),
+        };
+        //let x = flash.map(|msg| format!("{}<br>", msg.message()))
+        //.unwrap_or_else(|| "".to_string());
+        //let flash = flash.map(FlashMessage::into_inner);
+        //println!("\nflash: {:?}", flash);
         let response = String::from(r#"
             <b>Login</b>
             <form action="/login" method="post">
@@ -34,7 +43,7 @@ pub mod routes {
                 <input type="submit" value="Submit">
             </form>
         "#);
-        RawHtml(response)
+        RawHtml(format!("{}{}", x, response))
     }
 
     #[post("/", data = "<user_input>")]
