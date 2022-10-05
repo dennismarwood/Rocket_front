@@ -1,10 +1,11 @@
-use rocket::serde::json::Value;
+use rocket::serde::json::{Value, json};
 use rocket::response::Redirect;
 use rocket::response::content::RawHtml;
 use rocket::form::Form;
 use serde::Serialize;
 use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::request::FlashMessage;
+use rocket_dyn_templates::{Template, context};
 
 #[derive(FromForm, Serialize)]
 pub struct LoginCredentials {
@@ -16,34 +17,8 @@ pub mod routes {
     use super::*;
 
     #[get("/")]
-    pub async fn login(flash: Option<FlashMessage<'_>>) -> RawHtml<String> {
-        /*
-        Provide a form with email and pass.
-        When user submits form, take data and create reqwest to back end.
-            Data from form is serialized.
-            A new reqwest is created with the data and sent to the back end.
-            The response code determines success or fail.
-        Store cookie and redirect or display error message to user.
-        */
-        let x = match flash {
-            Some(x) => format!("{}<br>", x.message()),
-            None => "".to_string(),
-        };
-        //let x = flash.map(|msg| format!("{}<br>", msg.message()))
-        //.unwrap_or_else(|| "".to_string());
-        //let flash = flash.map(FlashMessage::into_inner);
-        //println!("\nflash: {:?}", flash);
-        let response = String::from(r#"
-            <b>Login</b>
-            <form action="/login" method="post">
-                <label for="email">Email:</label><br>
-                <input type="text" id="email" name="email"><br>
-                <label for="pass">Password:</label><br>
-                <input type="text" id="pass" name="pass"><br>
-                <input type="submit" value="Submit">
-            </form>
-        "#);
-        RawHtml(format!("{}{}", x, response))
+    pub async fn login(flash: Option<FlashMessage<'_>>) -> Template {
+        Template::render("login", context!{flash})
     }
 
     #[post("/", data = "<user_input>")]

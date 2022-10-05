@@ -7,9 +7,11 @@
     {% endblock head %}
 </head>
 <body>
+    {% if flash %} <div>{{ flash["message"] }}</div> {% endif %}
     <div id="content">{% block content %}{% endblock content %}</div>
     <div id="footer">
         {% block footer %}
+        <br>
         &copy; Copyright 2022 by <a href="http://about.dennismarwood.com/">Dennis</a>.
         {% endblock footer %}
     </div>
