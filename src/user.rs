@@ -1,13 +1,8 @@
-use rocket::serde::json::{Value, json};
-use rocket::response::{status, Redirect, Flash};
-use rocket::response::content::RawHtml;
-use rocket::form::Form;
+use rocket::serde::json::{Value};
+use rocket::response::{Redirect, Flash};
 use serde::Serialize;
-use rocket::http::{CookieJar, Cookie, SameSite, Status};
-use reqwest::{cookie::Jar};
+use rocket::http::{CookieJar};
 use rocket_dyn_templates::{Template, context};
-use rocket::request::{local_cache, FlashMessage};
-use rocket::Request;
 
 
 #[derive(FromForm, Serialize)]
@@ -69,14 +64,12 @@ pub mod routes {
     #[get("/")]
     pub async fn get_user(jar: &CookieJar<'_>) -> Result<Template, Flash<Redirect>> {//RawHtml<String> {   
 
-        let mut my_url : reqwest::Url = reqwest::Url::parse("http://back/user").unwrap();
-        my_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
+        let mut target_url : reqwest::Url = reqwest::Url::parse("http://back/user").unwrap();
+        target_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
 
         let my_client = reqwest_client(jar).unwrap();
 
-        //let mut map = serde_json::Map::new();
-
-        match my_client.get(my_url).send().await
+        match my_client.get(target_url).send().await
             {
                 Ok(response) => {
                     match response.status() {
