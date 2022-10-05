@@ -7,13 +7,12 @@ extern crate tera;
 mod login;
 
 mod logout;
-use logout::routes::*;
 
 mod user;
 use user::routes::*;
 
 mod catchers;
-use catchers::routes::*;
+
 
 #[get("/")] //This is a macro attribute
 fn index() -> &'static str {
@@ -30,25 +29,7 @@ pub async fn blog() -> Result<String, String> {
         Ok(x) => Ok(format!("{}: {:?}", x.status() , x.text().await)),
         Err(e) => Err(e.to_string()),
     }
-    //let x = json_response_from_backend.unwrap();
-    //String::from("Blog")
 }
-/* 
-#[catch(404)]
-fn not_found() -> Value {
-    json!("Not Found!")
-}
-
-#[catch(401)]
-fn unauthorized() -> Value {
-    json!("Unauthorized")
-}
-
-#[catch(422)]
-fn unprocessable_entity() -> Value {
-    json!("422 - Unprocessable Entity. Verify that submitted data is valid.")
-}
- */
 
 #[launch] //Will genererate the main function
 fn rocket() -> _ { //Built the rocket here
