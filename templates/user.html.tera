@@ -2,20 +2,30 @@
 {% block title %}User{% endblock title %}
 {% block head %}
     {{ super() }}
-    <style type="text/css">
-        .important { color: #336699; }
-    </style>
 {% endblock head %}
 {% block content %}
-    <h1>User</h1>
-    <p class="important">
-      Welcome to my awesome homepage.
-    </p>
+    <h1>Hello{% if user["first_name"] %}, {{ user["first_name"] }} {% else %}... you  {% endif %} </h1>
     <ul>
         {% for k, v in user %}
             <li>{{k | capitalize}}: {{v}}</li>
         {% endfor %}
     </ul>
+    <form action="/user/patch_user" method="post">
+        <label for="first_name">First:</label>
+        <input type="text" id="first_name" name="first_name" value={{ user["first_name"] }}><br>
 
+        <label for="last_name">Last:</label>
+        <input type="text" id="last_name" name="last_name" value={{ user["last_name"] }}><br>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" value={{ user["email"] }} required><br>
+
+        <p>Account Created: {{ user["created"] | date }}</p>
+        <p>Account Active: {{ user["active"] }}</p>
+        
+        <input type="submit" value="Update">
+        <input type="reset" value="Reset">
+    </form>    
+    <a href="/user/edit"></a>
     
 {% endblock content %}

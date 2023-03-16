@@ -9,7 +9,7 @@ pub mod routes {
     pub fn default_catcher(status: Status, request: &Request) -> Template { 
         //println!("\n\n{:?}", status);
         //println!("\n\n{:?}", request);
-        //println!("\ndefault_catcher ran.");
+        println!("\ndefault_catcher ran.");
         Template::render("error/default", context! {})
     }
 
@@ -17,7 +17,7 @@ pub mod routes {
     pub fn five_hundread(status: Status, request: &Request) -> Template {
         //println!("\n\n{:?}", status);
         //println!("\n\n{:?}", request);
-        //println!("\nfive_hundread catcher ran.");
+        println!("\nfive_hundread catcher ran.");
         Template::render("error/default", context! {})
     }
 }

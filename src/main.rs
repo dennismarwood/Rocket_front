@@ -35,7 +35,8 @@ pub async fn blog() -> Result<String, String> {
 fn rocket() -> _ { //Built the rocket here
     rocket::build()
         .mount("/", routes![index, blog])
-        .mount("/user", routes![get_user])
+        .mount("/user", routes![get_user, patch_user])
+        //.register("/user", catchers![user_401])
         .mount("/login", routes![login::routes::login, login::routes::process_login])
         .mount("/logout", routes![logout::routes::logout])
         .mount("/forwards_example", routes![])

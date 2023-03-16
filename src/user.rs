@@ -1,8 +1,10 @@
-use rocket::serde::json::{Value};
-use rocket::response::{Redirect, Flash};
+use rocket::serde::json::{Value, json};
+use rocket::Request;
+use rocket::response::{Redirect, Flash, status};
 use serde::Serialize;
-use rocket::http::{CookieJar};
+use rocket::http::{CookieJar, Status};
 use rocket_dyn_templates::{Template, context};
+use rocket::form::Form;
 
 
 #[derive(FromForm, Serialize)]
@@ -13,6 +15,13 @@ pub struct User {
     pub last_name: Option<String>,
     pub role: Option<i32>,
     pub active: Option<bool>,
+}
+
+#[derive(FromForm, Serialize)]
+pub struct UserUpdates {
+    pub email: Option<String>,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
 }
 
 pub mod routes {
@@ -62,40 +71,79 @@ pub mod routes {
     }
 
     #[get("/")]
-    pub async fn get_user(jar: &CookieJar<'_>) -> Result<Template, Flash<Redirect>> {//RawHtml<String> {   
+    pub async fn get_user(jar: &CookieJar<'_>) -> Result<Template, Flash<Redirect>> {
 
         let mut target_url : reqwest::Url = reqwest::Url::parse("http://back/user").unwrap();
         target_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
 
         let my_client = reqwest_client(jar).unwrap();
 
-        match my_client.get(target_url).send().await
-            {
-                Ok(response) => {
-                    match response.status() {
-                        reqwest::StatusCode::OK => {
-                            let user: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
-                            Ok(Template::render("user", context!{user}))
-                        }
-                        reqwest::StatusCode::INTERNAL_SERVER_ERROR => { //This is when the back end returns a 500
-                            let response: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
-                            Ok(Template::render("error/500", context! {response}))
-                        }
-                        reqwest::StatusCode::UNAUTHORIZED => {
-                            //Err(Redirect::to(uri!("/login")))
-                            Err(Flash::error(Redirect::to("/login"), "You must be logged in to view your user profile."))
-                        }
-                        _ => { //Backend returned status code other than 500, 401
-                            let response: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
-                            Ok(Template::render("error/default", context! {response}))
-                            
-                        }
+        match my_client.get(target_url).send().await{
+            Ok(response) => {
+                match response.status() {
+                    reqwest::StatusCode::OK => {
+                        let user: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
+                        Ok(Template::render("user", context!{user}))
                     }
-                },
-                Err(e) => { //This is when the front end returns a 500
-                    let response = e.to_string();
-                    Ok(Template::render("error/500", context! {response}))
+                    reqwest::StatusCode::INTERNAL_SERVER_ERROR => { //Backend returns a 500
+                        let response: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
+                        Ok(Template::render("error/500", context! {response}))
+                    }
+                    reqwest::StatusCode::UNAUTHORIZED => {
+                        Err(Flash::error(Redirect::to("/login"), "You must be logged in to view your user profile."))
+                    }
+                    _ => { //Backend returned status code other than 200, 500, 401
+                        let response: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
+                        Ok(Template::render("error/default", context! {response}))
+                        
+                    }
                 }
+            },
+            Err(e) => {//Frontend returns a 500
+                let response = e.to_string();
+                Ok(Template::render("error/500", context! {response}))
             }
+        }
     }
+
+    #[post("/patch_user", data = "<user_input>")]
+    //Web forms have only get and post methods. The frontend will route to itself and then generate a patch request to the backend. 
+    pub async fn patch_user(user_input: Form<UserUpdates>, jar: &CookieJar<'_>) -> Result<Template, Flash<Redirect>> {
+        let mut target_url : reqwest::Url = reqwest::Url::parse("http://back/user").unwrap();
+        target_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
+
+        let my_client = reqwest_client(jar).unwrap();
+
+        match my_client.patch(target_url)
+            //.form(&user_input.into_inner())
+            .json(&user_input.into_inner())
+            .send()
+            .await{
+            Ok(response) => {
+                match response.status() {
+                    reqwest::StatusCode::OK => {
+                        let user: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
+                        Ok(Template::render("user", context!{user}))
+                    }
+                    reqwest::StatusCode::INTERNAL_SERVER_ERROR => { //Backend returns a 500
+                        let response: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
+                        Ok(Template::render("error/500", context! {response}))
+                    }
+                    reqwest::StatusCode::UNAUTHORIZED => {
+                        Err(Flash::error(Redirect::to("/login"), "You must be logged in to view your user profile."))
+                    }
+                    _ => { //Backend returned status code other than 200, 500, 401
+                        let response: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
+                        Ok(Template::render("error/default", context! {response}))
+                        
+                    }
+                }
+            },
+            Err(e) => {//Frontend returns a 500
+                let response = e.to_string();
+                Ok(Template::render("error/500", context! {response}))
+            }
+        }
+    }
+
 }
