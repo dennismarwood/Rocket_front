@@ -12,7 +12,7 @@
     <div id="footer">
         {% block footer %}
         <br>
-        &copy; Copyright 2022 by <a href="http://about.dennismarwood.com/">Dennis</a>.
+        &copy; Copyright 2023 by <a href="http://about.dennismarwood.com/">Dennis</a>.
         {% endblock footer %}
     </div>
 </body>
