@@ -8,11 +8,11 @@
 {% endblock head %}
 {% block content %}
     <h1>Login</h1>
-    <form action="/login" method="post">
+    <form action="/session" method="post">
         <label for="email">Email:</label><br>
         <input type="email" id="email" name="email" placeholder="Email" required><br>
-        <label for="pass">Password:</label><br>
-        <input type="password" id="pass" name="pass" required><br>
+        <label for="password">Password:</label><br>
+        <input type="password" id="password" name="password" required><br>
         <input type="submit" value="Submit">
         <input type="reset" value="Reset">
     </form>    
