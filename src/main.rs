@@ -4,9 +4,7 @@ use rocket_dyn_templates::{Template};
 extern crate reqwest;
 extern crate tera;
 
-mod login;
-
-mod logout;
+mod session;
 
 mod user;
 use user::routes::*;
@@ -37,8 +35,7 @@ fn rocket() -> _ { //Built the rocket here
         .mount("/", routes![index, blog])
         .mount("/user", routes![get_user, patch_user])
         //.register("/user", catchers![user_401])
-        .mount("/login", routes![login::login, login::process_login])
-        .mount("/logout", routes![logout::routes::logout])
+        .mount("/session", routes![session::login, session::process_login, session::logout])
         .mount("/forwards_example", routes![])
         .attach(Template::fairing())
         //.register("/", catchers![default_catcher])

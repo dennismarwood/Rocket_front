@@ -13,7 +13,7 @@ pub struct LoginCredentials {
     pub password: String,
 }
 
-#[get("/")]
+#[get("/login")]
 pub async fn login(flash: Option<FlashMessage<'_>>) -> Template {
     Template::render("login", context!{flash})
 }
@@ -68,7 +68,7 @@ pub async fn process_login(user_input: Form<LoginCredentials>, jar: &CookieJar<'
     }
 }
 
-#[get("/")]
+#[get("/logout")]
 pub async fn logout(jar: &CookieJar<'_>) -> Redirect {
     jar.remove(Cookie::named("jwt"));
     Redirect::to(uri!("/"))
