@@ -37,7 +37,7 @@ fn rocket() -> _ { //Built the rocket here
         .mount("/", routes![index, blog])
         .mount("/user", routes![get_user, patch_user])
         //.register("/user", catchers![user_401])
-        .mount("/login", routes![login::routes::login, login::routes::process_login])
+        .mount("/login", routes![login::login, login::process_login])
         .mount("/logout", routes![logout::routes::logout])
         .mount("/forwards_example", routes![])
         .attach(Template::fairing())
