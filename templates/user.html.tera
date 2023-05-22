@@ -4,12 +4,12 @@
     {{ super() }}
 {% endblock head %}
 {% block content %}
-    <h1>Hello{% if user["first_name"] %}, {{ user["first_name"] }} {% else %}... you  {% endif %} </h1>
-    <ul>
+<h1>Hello{% if user["first_name"] %}, {{ user["first_name"] }} {% else %}... you  {% endif %} </h1>
+    {#<ul>
         {% for k, v in user %}
             <li>{{k | capitalize}}: {{v}}</li>
         {% endfor %}
-    </ul>
+    </ul>#}
     <form action="/user/patch_user" method="post">
         <label for="first_name">First:</label>
         <input type="text" id="first_name" name="first_name" value={{ user["first_name"] }}><br>
@@ -20,12 +20,24 @@
         <label for="email">Email:</label>
         <input type="email" id="email" name="email" value={{ user["email"] }} required><br>
 
-        <p>Account Created: {{ user["created"] | date }}</p>
-        <p>Account Active: {{ user["active"] }}</p>
-        
+        Account is active:
+        <input type="radio" id="account_active_true" name="acct_act" value="True" {% if user["active"] == true %} checked {% endif %}>
+        <label for="account_active_true">True</label>
+
+        <input type="radio" id="account_active_false" name="acct_act" value="False" {% if user["active"] == false %} checked {% endif %}>
+        <label for="account_active_false">False</label>
+
+        <br>
+
         <input type="submit" value="Update">
         <input type="reset" value="Reset">
-    </form>    
+
+    </form>
     <a href="/user/edit"></a>
-    
+    Created: {{ user["created"] | date }}<br>
+    Last Accessed: {{ user["last_access"] }}<br>
+    ID: {{ user["id"] }}<br>
+    Role: {{ user["role"] }}<br>
+
+    <a href="/user/update_pw">Change</a> my password
 {% endblock content %}

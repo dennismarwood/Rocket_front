@@ -1,0 +1,21 @@
+{% extends "base" %}
+{% block title %}Update User Password{% endblock title %}
+{% block head %}
+    {{ super() }}
+{% endblock head %}
+{% block content %}
+    <h1>Update your password</h1>
+    <form action="/user/process_pw_update" method="post">
+        <label for="current_password">Current Password:</label>
+        <input type="password" id="current_password" name="current_password" required><br>
+
+        <label for="new_password">New Password:</label>
+        <input type="password" id="new_password" name="new_password" required><br>
+
+        <label for="new_password_confirm">Confirm Password:</label>
+        <input type="password" id="new_password_confirm" name="new_password_confirm" required><br>
+
+        <input type="submit" value="Submit">
+        <input type="reset" value="Reset">
+    </form>    
+{% endblock content %}
