@@ -7,7 +7,7 @@
     {% endblock head %}
 </head>
 <body>
-    {% if flash %} <div>{{ flash["message"] }}</div> {% endif %}
+    {% if flash %}<div>{{ flash["message"] }}</div> {% endif %}
     <div id="content">{% block content %}{% endblock content %}</div>
     <div id="footer">
         {% block footer %}

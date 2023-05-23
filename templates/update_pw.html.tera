@@ -9,6 +9,7 @@
         <label for="current_password">Current Password:</label>
         <input type="password" id="current_password" name="current_password" required><br>
 
+        {% if map.message %}<br>{{ map.message }}<br><br>{% endif %}
         <label for="new_password">New Password:</label>
         <input type="password" id="new_password" name="new_password" required><br>
 

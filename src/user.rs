@@ -5,6 +5,7 @@ use serde::Serialize;
 use rocket::http::{CookieJar, Status};
 use rocket_dyn_templates::{Template, context};
 use rocket::form::Form;
+use rocket::request::FlashMessage;
 /*
 {"data":
     {"active":true,
@@ -37,10 +38,11 @@ pub struct UserUpdates {
 }
 
 #[derive(FromForm, Serialize)]
-pub struct PasswordUpdate {
-    pub current_password: String,
-    pub new_password: String,
-    pub new_password_confirm: String,
+pub struct PasswordUpdate<'r> {
+    pub current_password:  &'r str,
+    pub new_password: &'r str,
+    //#[field(validate = eq(self.new_password))]
+    pub new_password_confirm:  &'r str,
 }
 
 pub mod routes {
@@ -90,27 +92,37 @@ pub mod routes {
         .cookie_store(true)
         .build()
     }
-
+    use std::collections::HashMap;
     #[get("/update_pw")]
-    pub async fn update_pw_template()-> Template {
-        Template::render("update_pw", context!{})
+    pub async fn update_pw_template(flash: Option<FlashMessage<'_>>)-> Template {
+        let mut map: HashMap<&str, &str> = HashMap::new();
+        if let Some(ref msg) = flash {
+            map.insert("message", msg.message());
+        }
+        Template::render("update_pw", context!{ map })
     }
-
+    
     #[post("/process_pw_update", data = "<pw_update>")]
-    pub async fn process_pw_update(pw_update: Form<PasswordUpdate>, jar: &CookieJar<'_>) {
-        println!("Here is pw_update {}", pw_update.current_password);
+    pub async fn process_pw_update<'a>(pw_update: Form<PasswordUpdate<'a>>, jar: &CookieJar<'_>) -> Result<(), Flash<Redirect>> {
+        //Confirm user entered the same new pw twice
+        if pw_update.new_password != pw_update.new_password_confirm {
+            return Err(Flash::error(Redirect::to(uri!("/user/update_pw")), "New passwords did not match. Try again."))
+        }
+
+        //println!("Here is pw_update {}", pw_update.current_password);
         let mut target_url : reqwest::Url = reqwest::Url::parse("http://back/users/confirm_pw").unwrap();
         target_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
 
         let my_client = reqwest_client(jar).unwrap();
 
-        match my_client.post(target_url).header(CONTENT_TYPE, "text/plain").body(pw_update.current_password.clone()).send().await{
+        match my_client.post(target_url).header(CONTENT_TYPE, "text/plain").body(pw_update.current_password.to_string()).send().await{
             //Need to look at the response code type and handle pw validity
             Ok(response) => println!("PW was valid\n{:?}", response.text().await),
             Err(_) => println!("PW was NOT valid")
         }
         //verify that user password was valid, logout if not.
         //verify that the new passwords match, return to form with flash error if not.
+        Ok(())
     }
 
     #[get("/")]
