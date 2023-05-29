@@ -10,26 +10,32 @@
             <li>{{k | capitalize}}: {{v}}</li>
         {% endfor %}
     </ul>#}
-    <form action="/user/patch_user" method="post">
+    {% if admin %}<h3 style="color: red;">-Editing another user-</h3>{% endif %}
+    <form action="/user/patch_user{% if admin %}/{{ user["id"] }}{% endif %}" method="post">
         <label for="first_name">First:</label>
-        <input type="text" id="first_name" name="first_name" value={{ user["first_name"] }}><br>
+        <input type="text" id="first_name" name="first_name" value="{{ user["first_name"] }}"><br>
 
         <label for="last_name">Last:</label>
-        <input type="text" id="last_name" name="last_name" value={{ user["last_name"] }}><br>
+        <input type="text" id="last_name" name="last_name" value="{{ user["last_name"] }}"><br>
 
         <label for="email">Email:</label>
         <input type="email" id="email" name="email" value={{ user["email"] }} required><br>
+        
+        {% if admin %}
+            <label for="password">New Password:</label>
+            <input type="password" id="phc" name="phc"><br>
+        {% endif %}
 
         Account is active:
-        <input type="radio" id="account_active_true" name="acct_act" value="True" {% if user["active"] == true %} checked {% endif %}>
+        <input type="radio" id="account_active_true" name="active" value="True" {% if user["active"] == true %} checked {% endif %}>
         <label for="account_active_true">True</label>
 
-        <input type="radio" id="account_active_false" name="acct_act" value="False" {% if user["active"] == false %} checked {% endif %}>
+        <input type="radio" id="account_active_false" name="active" value="False" {% if user["active"] == false %} checked {% endif %}>
         <label for="account_active_false">False</label>
 
         <br>
 
-        <input type="submit" value="Update">
+        <input type="submit" value="Update" {% if admin %}style="border: solid 2px red;"{% endif %}>
         <input type="reset" value="Reset">
 
     </form>
@@ -39,5 +45,9 @@
     ID: {{ user["id"] }}<br>
     Role: {{ user["role"] }}<br>
 
-    <a href="/user/update_pw">Change</a> my password
+    {% if not admin %}
+        <a href="/user/update_pw">Change</a> my password
+    {% endif %}
+
+    {% if user["role"] == 1 %} <br> Alter other user's data <a href="/user/list_all_users">here</a>. {% endif %}
 {% endblock content %}

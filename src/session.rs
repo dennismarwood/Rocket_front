@@ -28,7 +28,6 @@ pub async fn process_login(user_input: Form<LoginCredentials>, jar: &CookieJar<'
         .cookie_store(true)
         .build().unwrap();
     //Send the user input to the backend.
-    println!("----{}", my_url);
     match client.post(my_url)
         .json(&user_input.into_inner())
         .send()

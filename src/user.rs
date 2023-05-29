@@ -1,11 +1,9 @@
-use rocket::serde::json::{Value, json};
-use rocket::Request;
-use rocket::response::{Redirect, Flash, status};
-use serde::Serialize;
-use rocket::http::{CookieJar, Status};
+use rocket::serde::json::{Value};
+use rocket::response::{Redirect, Flash};
+use serde::{Serialize, Deserialize};
+use rocket::http::{CookieJar};
 use rocket_dyn_templates::{Template, context};
-use rocket::form::Form;
-use rocket::request::FlashMessage;
+use rocket::form::{Form, Context, Contextual};
 /*
 {"data":
     {"active":true,
@@ -20,8 +18,8 @@ use rocket::request::FlashMessage;
 */
 //#[derive(FromForm, Serialize)]
 //pub struct 200_Response
-#[derive(FromForm, Serialize)]
-pub struct Userx {
+#[derive(FromForm, Serialize, Deserialize, Debug)]
+pub struct User {
     pub email : Option<String>,
     pub pass :Option<String>, // Must be labled phc for diesel but this will initially be the user's new password
     pub first_name: Option<String>,
@@ -29,19 +27,40 @@ pub struct Userx {
     pub role: Option<i32>,
     pub active: Option<bool>,
 }
-
-#[derive(FromForm, Serialize)]
-pub struct UserUpdates {
-    pub email: Option<String>,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UserWithoutPHC {
+    pub id: i32,
+    pub email: String,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
+    pub created: Option<String>,
+    pub role: i32,
+    pub active: Option<bool>,
+    pub last_access: Option<String>,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct Response {
+    pub status: String,
+    pub message: Option<String>,
+    pub location: Option<String>,
+    pub data: Option<serde_json::Value>,
+    pub code: Option<String>,
+    pub errors: Option<serde_json::Value>,
 }
 
-#[derive(FromForm, Serialize)]
+#[derive(FromForm, Serialize, Deserialize)]
+pub struct UserUpdates {
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub email: Option<String>,
+    pub phc: Option<String>,
+}
+
+#[derive(FromForm, Serialize, Debug)]
 pub struct PasswordUpdate<'r> {
     pub current_password:  &'r str,
     pub new_password: &'r str,
-    //#[field(validate = eq(self.new_password))]
+    #[field(validate = eq(self.new_password))]
     pub new_password_confirm:  &'r str,
 }
 
@@ -49,12 +68,6 @@ pub mod routes {
     use reqwest::header::CONTENT_TYPE;
 
     use super::*;
-
-    /*
-    User has jwt cookie? No -> redirect to login page.
-    Send jwt to back end. Receive user fields.
-    Display user fields form. Post to update user.
-    */
 
     pub fn reqwest_client<'a>(jar: &CookieJar<'_>) -> Result<reqwest::Client, reqwest::Error> {
         /*
@@ -92,37 +105,86 @@ pub mod routes {
         .cookie_store(true)
         .build()
     }
-    use std::collections::HashMap;
+
     #[get("/update_pw")]
-    pub async fn update_pw_template(flash: Option<FlashMessage<'_>>)-> Template {
-        let mut map: HashMap<&str, &str> = HashMap::new();
-        if let Some(ref msg) = flash {
-            map.insert("message", msg.message());
-        }
-        Template::render("update_pw", context!{ map })
+    pub async fn update_pw_template()-> Template {
+        Template::render("update_pw", &Context::default())
     }
     
     #[post("/process_pw_update", data = "<pw_update>")]
-    pub async fn process_pw_update<'a>(pw_update: Form<PasswordUpdate<'a>>, jar: &CookieJar<'_>) -> Result<(), Flash<Redirect>> {
-        //Confirm user entered the same new pw twice
-        if pw_update.new_password != pw_update.new_password_confirm {
-            return Err(Flash::error(Redirect::to(uri!("/user/update_pw")), "New passwords did not match. Try again."))
+    pub async fn process_pw_update<'a>(pw_update: Form<Contextual<'a, PasswordUpdate<'_>>>, jar: &CookieJar<'_>) -> Result<Redirect, Template> {
+        //If form was valid
+        if let Some(ref value) = pw_update.value {
+            let mut target_url : reqwest::Url = reqwest::Url::parse("http://back/users/confirm_pw").unwrap();
+            target_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
+
+            let my_client = reqwest_client(jar).unwrap();
+
+            //Verify that the existing pw is valid
+            match my_client.post(target_url).header(CONTENT_TYPE, "text/plain").body(value.current_password.to_string()).send().await{
+                Ok(response) => {
+                    match response.status().as_u16() {
+                        200 => (),
+                        401 => return Err(Template::render("update_pw", context!{bad_pw: "bad_pw",})),
+                        _ => return Err(Template::render("error/500", context! {response: response.status().as_u16()})),
+                    }
+                },
+                Err(e) => return Err(Template::render("error/500", context! {response: e.to_string()})), //Back end did not respond
+            }
+            
+            target_url = reqwest::Url::parse("http://back/users/confirm_pw").unwrap();
+            target_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
+            //Update the user's pw
+            match my_client.post(target_url).header(CONTENT_TYPE, "text/plain").body(value.current_password.to_string()).send().await{
+                Ok(response) => {
+                    match response.status().as_u16() {
+                        200 => (),
+                        401 => return Err(Template::render("update_pw", context!{bad_pw: "bad_pw",})),
+                        _ => return Err(Template::render("error/500", context! {response: response.status().as_u16()})),
+                    }
+                },
+                Err(e) => return Err(Template::render("error/500", context! {response: e.to_string()})) //Back end did not respond
+            }
         }
 
-        //println!("Here is pw_update {}", pw_update.current_password);
-        let mut target_url : reqwest::Url = reqwest::Url::parse("http://back/users/confirm_pw").unwrap();
+        //Form had errors
+        Err(Template::render("update_pw", &pw_update.context))
+    }
+
+    #[get("/<id>")]
+    pub async fn get_user_by_id(id: i32, jar: &CookieJar<'_>) -> Result<Template, Flash<Redirect>> {
+        let mut target_url : reqwest::Url = reqwest::Url::parse(&format!("http://back/users/{}", id)).unwrap();
         target_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
 
         let my_client = reqwest_client(jar).unwrap();
 
-        match my_client.post(target_url).header(CONTENT_TYPE, "text/plain").body(pw_update.current_password.to_string()).send().await{
-            //Need to look at the response code type and handle pw validity
-            Ok(response) => println!("PW was valid\n{:?}", response.text().await),
-            Err(_) => println!("PW was NOT valid")
+        match my_client.get(target_url).send().await{
+            Ok(response) => {
+                match response.status() {
+                    reqwest::StatusCode::OK => {
+                        let r: Response = response.json::<Response>().await.unwrap();
+                        match r.data {
+                            Some(user) => return Ok(Template::render("user", context!{user, admin: true})),
+                            None => return Ok(Template::render("error/500", context! {r})),//Looked up a user but did not get user data.
+                        };
+                    }
+                    reqwest::StatusCode::INTERNAL_SERVER_ERROR => { //Backend returns a 500
+                        let response: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
+                        Ok(Template::render("error/500", context! {response}))
+                    }
+                    reqwest::StatusCode::UNAUTHORIZED => {
+                        Err(Flash::error(Redirect::to("/session/login"), "You must be logged in to view your user profile."))
+                    }
+                    _ => { //Backend returned status code other than 200, 500, 401
+                        Ok(Template::render("error/500", context! {response: response.status().as_u16()}))
+                    }
+                }
+            },
+            Err(e) => {//Frontend returns a 500
+                let response = e.to_string();
+                Ok(Template::render("error/500", context! {response}))
+            }
         }
-        //verify that user password was valid, logout if not.
-        //verify that the new passwords match, return to form with flash error if not.
-        Ok(())
     }
 
     #[get("/")]
@@ -137,10 +199,11 @@ pub mod routes {
             Ok(response) => {
                 match response.status() {
                     reqwest::StatusCode::OK => {
-                        let user: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
-                        let user = &user["data"];
-                        //let user = response.json().await().unwrap();
-                        Ok(Template::render("user", context!{user}))
+                        let r: Response = response.json::<Response>().await.unwrap();
+                        match r.data {
+                            Some(user) => return Ok(Template::render("user", context!{user})),
+                            None => return Ok(Template::render("error/500", context! {r})),//Looked up a user but did not get user data.
+                        };
                     }
                     reqwest::StatusCode::INTERNAL_SERVER_ERROR => { //Backend returns a 500
                         let response: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
@@ -152,7 +215,6 @@ pub mod routes {
                     _ => { //Backend returned status code other than 200, 500, 401
                         let response: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
                         Ok(Template::render("error/default", context! {response}))
-                        
                     }
                 }
             },
@@ -165,42 +227,99 @@ pub mod routes {
 
     #[post("/patch_user", data = "<user_input>")]
     //Web forms have only get and post methods. The frontend will route to itself and then generate a patch request to the backend. 
-    pub async fn patch_user(user_input: Form<UserUpdates>, jar: &CookieJar<'_>) -> Result<Template, Flash<Redirect>> {
-        let mut target_url : reqwest::Url = reqwest::Url::parse("http://back/user").unwrap();
+    pub async fn patch_user(user_input: Form<UserUpdates>, jar: &CookieJar<'_>) -> Result<Redirect, Template> {
+        let mut target_url : reqwest::Url = reqwest::Url::parse("http://back/users").unwrap();
         target_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
 
         let my_client = reqwest_client(jar).unwrap();
-
         match my_client.patch(target_url)
-            //.form(&user_input.into_inner())
             .json(&user_input.into_inner())
             .send()
             .await{
             Ok(response) => {
-                match response.status() {
-                    reqwest::StatusCode::OK => {
-                        let user: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
-                        Ok(Template::render("user", context!{user}))
-                    }
-                    reqwest::StatusCode::INTERNAL_SERVER_ERROR => { //Backend returns a 500
-                        let response: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
-                        Ok(Template::render("error/500", context! {response}))
+                match response.status() 
+                {
+                    reqwest::StatusCode::NO_CONTENT => {
+                        Ok(Redirect::to("/user"))
                     }
                     reqwest::StatusCode::UNAUTHORIZED => {
-                        Err(Flash::error(Redirect::to("/login"), "You must be logged in to view your user profile."))
+                        Ok(Redirect::to("/session/login"))
                     }
-                    _ => { //Backend returned status code other than 200, 500, 401
-                        let response: Value = serde_json::from_str(&response.text().await.unwrap()[..]).unwrap();
-                        Ok(Template::render("error/default", context! {response}))
-                        
+                    _ => {
+                        Err(Template::render("error/500", context! {response: response.status().as_u16()}))
                     }
                 }
             },
-            Err(e) => {//Frontend returns a 500
+            Err(e) => {
+                let response = e.to_string();
+                Err(Template::render("error/500", context! {response}))
+            }
+        }
+    }
+
+    #[post("/patch_user/<id>", data = "<user_input>")]
+    //Web forms have only get and post methods. The frontend will route to itself and then generate a patch request to the backend. 
+    pub async fn patch_user_by_id(id: i32, user_input: Form<UserUpdates>, jar: &CookieJar<'_>) -> Result<Redirect, Template> {
+        let mut target_url : reqwest::Url = reqwest::Url::parse(&format!("http://back/users/{}", id)).unwrap();
+        target_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
+
+        let my_client = reqwest_client(jar).unwrap();
+        match my_client.patch(target_url)
+            .json(&user_input.into_inner())
+            .send()
+            .await{
+            Ok(response) => {
+                match response.status() 
+                {
+                    reqwest::StatusCode::NO_CONTENT => {
+                        Ok(Redirect::to("/user"))
+                    }
+                    reqwest::StatusCode::UNAUTHORIZED => {
+                        Ok(Redirect::to("/session/login"))
+                    }
+                    _ => {
+                        Err(Template::render("error/500", context! {response: response.status().as_u16()}))
+                    }
+                }
+            },
+            Err(e) => {
+                let response = e.to_string();
+                Err(Template::render("error/500", context! {response}))
+            }
+        }
+    }
+
+    #[get("/list_all_users")]
+    pub async fn list_all_users(jar: &CookieJar<'_>) -> Result<Template, Redirect> {
+        let mut target_url : reqwest::Url = reqwest::Url::parse("http://back/users/list_of_all_users").unwrap();
+        target_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
+
+        let my_client = reqwest_client(jar).unwrap();
+        match my_client.get(target_url).send().await{
+            Ok(response) => {
+                match response.status() 
+                {
+                    reqwest::StatusCode::OK => {
+                        let r: Response = response.json::<Response>().await.unwrap();
+                        let array_of_users = match r.data {
+                            Some(u) => u,
+                            None => return Ok(Template::render("admin/list_of_users", context!{r})),
+                        };
+                        let users: Vec<UserWithoutPHC> = serde_json::from_value(array_of_users).unwrap();
+                        Ok(Template::render("admin/list_of_users", context!{users}))
+                    }
+                    reqwest::StatusCode::UNAUTHORIZED => {
+                        Err(Redirect::to("/session/login"))
+                    }
+                    _ => {
+                        Ok(Template::render("error/500", context! {response: response.status().as_u16()}))
+                    }
+                }
+            },
+            Err(e) => {
                 let response = e.to_string();
                 Ok(Template::render("error/500", context! {response}))
             }
         }
     }
-
 }

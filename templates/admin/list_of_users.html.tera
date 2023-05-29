@@ -1,0 +1,39 @@
+{% extends "base" %}
+{% block title %}User{% endblock title %}
+{% block head %}
+    {{ super() }}
+    <style>
+        table {
+            border-collapse:separate; 
+            border-spacing: 1em;
+          }
+    </style>
+{% endblock head %}
+{% block content %}
+    Select a user to alter:
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Email</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Created</th>
+            <th>Role</th>
+            <th>Active</th>
+            <th>Last Access</th>
+        </tr>
+        {% for user in users %}
+            <tr class="{% if loop.index0 is divisibleby(2) %}shaded{% endif %}">
+                <td><a href = "/user/{{ user.id }}">{{ user.id }}</a></td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.first_name | default(value="") }}</td>
+                <td>{{ user.last_name | default(value="") }}</td>
+                <td>{{ user.created | default(value="") }}</td>
+                <td>{{ user.role }}</td>
+                <td>{{ user.active | default(value="") }}</td>
+                <td>{{ user.last_access | default(value="") }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+    <input type="submit" value="Select User">
+{% endblock content %}

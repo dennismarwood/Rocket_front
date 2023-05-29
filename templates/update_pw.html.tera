@@ -6,10 +6,11 @@
 {% block content %}
     <h1>Update your password</h1>
     <form action="/user/process_pw_update" method="post">
+        {% if bad_pw %}<br>The current account password was incorrect.<br><br>{% endif %}
         <label for="current_password">Current Password:</label>
         <input type="password" id="current_password" name="current_password" required><br>
 
-        {% if map.message %}<br>{{ map.message }}<br><br>{% endif %}
+        {% if errors.new_password_confirm %}<br>"New Password" and "Confirm Password" need to be the same value.<br><br>{% endif %}
         <label for="new_password">New Password:</label>
         <input type="password" id="new_password" name="new_password" required><br>
 
