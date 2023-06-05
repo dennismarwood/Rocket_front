@@ -54,6 +54,7 @@ pub struct UserUpdates {
     pub last_name: Option<String>,
     pub email: Option<String>,
     pub phc: Option<String>,
+    pub active: Option<bool>,
 }
 
 #[derive(FromForm, Serialize, Debug)]
@@ -138,7 +139,7 @@ pub mod routes {
             match my_client.post(target_url).header(CONTENT_TYPE, "text/plain").body(value.current_password.to_string()).send().await{
                 Ok(response) => {
                     match response.status().as_u16() {
-                        200 => (),
+                        200 => return Ok(Redirect::to("/user")),
                         401 => return Err(Template::render("update_pw", context!{bad_pw: "bad_pw",})),
                         _ => return Err(Template::render("error/500", context! {response: response.status().as_u16()})),
                     }
@@ -319,6 +320,28 @@ pub mod routes {
             Err(e) => {
                 let response = e.to_string();
                 Ok(Template::render("error/500", context! {response}))
+            }
+        }
+    }
+
+    #[delete("/<id>")]
+    pub async fn delete_user(id: i32, jar: &CookieJar<'_>) -> Result<Redirect, Template> {
+        let mut target_url : reqwest::Url = reqwest::Url::parse(&format!("http://back/users/{}", id)).unwrap();
+        target_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
+
+        let my_client = reqwest_client(jar).unwrap();
+        match my_client.delete(target_url).send().await{
+            Ok(response) => {
+                match response.status() 
+                {
+                    reqwest::StatusCode::NO_CONTENT => Ok(Redirect::to("/user")),
+                    //reqwest::StatusCode::NOT_FOUND => Ok(Redirect::to("/user")),
+                    _ => Err(Template::render("error/500", context! {response: response.status().as_u16()})),
+                }
+            }
+            Err(e) => {
+                let response = e.to_string();
+                Err(Template::render("error/500", context! {response}))
             }
         }
     }

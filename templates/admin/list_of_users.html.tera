@@ -10,7 +10,7 @@
     </style>
 {% endblock head %}
 {% block content %}
-    Select a user to alter:
+    Click the user you wish to alter:
     <table>
         <tr>
             <th>ID</th>
@@ -35,5 +35,4 @@
             </tr>
         {% endfor %}
     </table>
-    <input type="submit" value="Select User">
 {% endblock content %}

@@ -2,15 +2,53 @@
 {% block title %}User{% endblock title %}
 {% block head %}
     {{ super() }}
+    <style>
+        /* Create a modal (hidden by default) */
+        #confirmUserDelete, #errorModal {
+            position: fixed; 
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        /* Modal content */
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto; 
+            padding: 20px;
+            border: 1px solid #888;
+            width: 30%;
+        }
+    </style>
+
+    <script>
+        window.onload = function() {
+            var modal = document.getElementById("confirmUserDelete");
+            var showModalLink = document.getElementById("showDeleteUserModal");
+            var modalConfirm = document.getElementById("modalConfirm");
+            var modalCancel = document.getElementById("modalCancel");
+            var deleteUserForm = document.getElementById("deleteUserForm");
+
+            showModalLink.onclick = function() {
+                modal.style.display = "block";
+            }
+
+            modalConfirm.onclick = function() {
+                deleteUserForm.submit();
+            }
+
+            modalCancel.onclick = function() {
+                modal.style.display = "none";
+            }
+        }
+    </script>
 {% endblock head %}
 {% block content %}
 <h1>Hello{% if user["first_name"] %}, {{ user["first_name"] }} {% else %}... you  {% endif %} </h1>
-    {#<ul>
-        {% for k, v in user %}
-            <li>{{k | capitalize}}: {{v}}</li>
-        {% endfor %}
-    </ul>#}
-    {% if admin %}<h3 style="color: red;">-Editing another user-</h3>{% endif %}
     <form action="/user/patch_user{% if admin %}/{{ user["id"] }}{% endif %}" method="post">
         <label for="first_name">First:</label>
         <input type="text" id="first_name" name="first_name" value="{{ user["first_name"] }}"><br>
@@ -39,6 +77,12 @@
         <input type="reset" value="Reset">
 
     </form>
+
+    {% if admin %}
+        <a href="#" id="showDeleteUserModal">Delete This User</a>
+        <br>
+    {% endif %}
+
     <a href="/user/edit"></a>
     Created: {{ user["created"] | date }}<br>
     Last Accessed: {{ user["last_access"] }}<br>
@@ -46,8 +90,33 @@
     Role: {{ user["role"] }}<br>
 
     {% if not admin %}
-        <a href="/user/update_pw">Change</a> my password
+        <div><a href="/user/update_pw">Change</a> my password</div>
     {% endif %}
 
-    {% if user["role"] == 1 %} <br> Alter other user's data <a href="/user/list_all_users">here</a>. {% endif %}
+    {% if user["role"] == 1 %} <div> Alter other user's data <a href="/user/list_all_users">here</a>. </div>{% endif %}
+
+    <p><a href="/post/new_post">Create</a> a new post.</p>
+    <p><a href="/post/create">Update or delete</a> an existing post.</p>
+    <p><a href="/post/create">Manage</a> tags.</p>
+    
+
+    <div id="confirmUserDelete" style="display: none;">
+        <div class="modal-content">
+            <p>Are you sure you want to delete this user?</p>
+            <p>Remember, you can disable a user.</p>
+            <form id="deleteUserForm" action=/user/{{ user["id"] }} method="post">
+                <input type="hidden" name="_method" value="delete">
+                <button type="submit" id="modalConfirm">OK</button>
+                <button type="button" id="modalCancel">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="errorModal" style="display: none;">
+        <div class="modal-content">
+            <p id="errorMessage">An error occurred.</p>
+            <button id="errorModalClose">Close</button>
+        </div>
+    </div>
+    
 {% endblock content %}

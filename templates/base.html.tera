@@ -4,18 +4,183 @@
     {% block head %}
     {# <link rel="stylesheet" href="style.css" /> #}
     <title>{% block title %}{% endblock title %} User </title>
+    <style>
+
+        a {
+            text-decoration: none;
+            color: inherit;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration-line: underline;
+            text-decoration-style: solid;
+            cursor: pointer;
+        }
+
+        body {
+            height: 100%;
+            margin: 0;
+            padding-left:10%;
+            padding-right:10%;
+        }
+        
+        hr {
+            border: none;
+            border-top: 3px solid gray;
+            border-radius: 2px;
+            margin-top: 0.25%;
+            margin-bottom: 0.25%;
+            flex: 0 0 80%;
+        }
+
+        .page {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box; /* Ensure padding and border are included in the height calculation */
+        
+            .header {
+                /*flex: 0 0 15%;*/ /* Do not grow or shrink. Consume 15% of page  *//* Three values: flex-grow | flex-shrink | flex-basis */
+                display: flex;
+                flex-wrap: wrap;
+                background-color: pink;
+                
+
+                > .left {
+                    flex: 1; /* Fill remaining space */
+                    background-color:chocolate;
+                    flex: 0 0 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                
+                    > .dot { /*Stand in for photo */
+                        height: 80%;
+                        width:5%;
+                        background-color: black;
+                        border-radius: 50%;
+                        display: inline-block;
+                      }
+
+                    > .name {
+                        font-size: 3em;
+                    }
+
+                    > .specialty {
+                        font-size: 1.3em;
+                    }
+                    
+                }
+
+                > .right {
+                    /*flex: 0 0 50%;*/ /* Fixed width */
+                    flex: 1;
+                    background-color:cadetblue;
+                    justify-content: center;
+                    display: flex;
+                    align-items: center;
+                    
+                    
+                    > .nav_container {
+                        display: flex;
+                        flex-wrap: wrap;
+                        flex: 0 0 50%;
+                        justify-content: space-between;
+                       
+                        > .nav_entry {
+                            font-size: 1.65em;
+                            text-align: center;
+                            flex: 0 0 25%;
+                        }
+
+                        > .arrow-down {
+                            flex: 0 0 25%;
+                            width: 1em; 
+                            height: 1em; 
+                            justify-content: center;
+                            display: flex;
+                            align-items: center;
+                            background-repeat: no-repeat;
+                            background-position: center;
+                            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='1em' viewBox='0 0 384 512'%3E%3C!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. --%3E%3Cpath d='M169.4 470.6c12.5 12.5 32.8 12.5 45.3 0l160-160c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 370.8 224 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 306.7L54.6 265.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l160 160z'/%3E%3C/svg%3E");
+                        }
+                    }
+                }
+            }
+
+            .content {
+                padding: 1%;
+                flex: 1; /* Consume any unalloted container space */
+                background-color: darkgreen;
+                display: flex;
+                justify-content: top;
+                align-items: center;
+                flex-direction: column;
+            }
+
+            .footer {
+                padding-bottom: 1%;
+                background-color: darkslategrey;
+                overflow: hidden;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-between;
+
+                > .foot_entry {
+                    text-align: center;
+                }
+                
+                > .hr_container {
+                    flex: 0 0 100%;
+                    display: flex;
+                    > hr {
+                        margin-top: 0%;
+                        margin-bottom: 1%;
+                    }
+                }
+
+            }
+        }
+    </style>
     {% endblock head %}
 </head>
 <body>
-    {% if flash %}<div>{{ flash["message"] }}</div> {% endif %}
-    <div id="content">{% block content %}{% endblock content %}</div>
-    <div id="footer">
-        {% block footer %}
-        <br>
-        <a href="/user">User Page</a>
-        <br>
-        &copy; Copyright 2023 by <a href="http://about.dennismarwood.com/">Dennis</a>.
-        {% endblock footer %}
+    <div class="page">
+        {% block header %}
+            <div class="header">
+                <div class="left">
+                    <span class="dot"></span>
+                    <div class="name">Dennis Marwood</div>
+                    <div class="specialty">A developer with a focus on the function over the form</div>
+                </div>
+                <div class="right">
+                    <div class="nav_container">
+                        <div class="arrow-down"></div>
+                        <div class="arrow-down"></div>
+                        <div class="arrow-down"></div>
+                        <div class="arrow-down"></div>
+                        <div class="nav_entry"> Home </div>
+                        <div class="nav_entry"> Projects </div>
+                        <div class="nav_entry"> Articles </div>
+                        <div class="nav_entry"> About </div>
+                    </div>
+                </div>
+                <hr>
+            </div>
+        {% endblock header %}
+        <div class="content">Content
+            {% if flash %}<div>{{ flash["message"] }}</div> {% endif %}
+            {% block content %}{% endblock content %}
+        </div>
+        <div class="footer">
+            {% block footer %}
+            <div class="hr_container"><hr></div>
+            <div class="foot_entry">Built with <a href="http://Rocket.rs">Rocket</a> and <a href="https://tera.netlify.app/">Tera</a>.</div>
+            <div class="foot_entry">&copy; Copyright 2023 <a href="http://about.dennismarwood.com/">DennisMarwood.com</a></div>
+            <div class="foot_entry">Navigate to your <a href="/user">profile</a>.</div>
+            <div class="foot_entry"><a href="/session/logout">Log in/out</a></div>
+            {% endblock footer %}
+        </div>
     </div>
 </body>
 </html>
