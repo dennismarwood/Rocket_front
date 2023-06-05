@@ -1,0 +1,32 @@
+{% extends "base" %}
+{% block title %}Create a new blog post{% endblock title %}
+{% block head %}
+    {{ super() }}
+    <style>
+        select {
+            width: 5em;
+        }
+    </style>
+{% endblock head %}
+{% block content %}
+    <h1>Create a new blog post.</h1>
+    <form action="/user/process_pw_update" method="post">
+        {% if bad_pw %}<br>The current account password was incorrect.<br><br>{% endif %}
+        <label for="title">Title:</label>
+        <input id="title" name="title" required><br>
+
+        <label>Add tags:
+            <select multiple>
+                <option selected>a</option>
+                <option selected>b</option>
+                <option>c</option>
+            </select> 
+        </label>
+        <br>
+        <label for="content">Content:</label><br>
+        <textarea id="content" name="content" rows="40" cols="100"></textarea><br>
+
+        <input type="submit" value="Submit">
+        <input type="reset" value="Reset">
+    </form>    
+{% endblock content %}

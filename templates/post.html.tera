@@ -1,0 +1,12 @@
+{% extends "base" %}
+{% block title %}Dennis Marwood{% endblock title %}
+{% block head %}
+    {{ super() }}
+    <style></style>
+    <script></script>
+{% endblock head %}
+{% block content %}
+<p>Welcome<br>Blurb about me</p>
+<p>Here I write to get thoughts out of my head, making room for new ones.</p> 
+<p>I like the table format of the posts found at https://www.taniarascia.com/</p>
+{% endblock content %}
