@@ -80,7 +80,6 @@
                     display: flex;
                     align-items: center;
                     
-                    
                     > .nav_container {
                         display: flex;
                         flex-wrap: wrap;
@@ -116,6 +115,15 @@
                 justify-content: top;
                 align-items: center;
                 flex-direction: column;
+
+                /* Trash this eventually, want header and footer to stay in place "over" the body eventually. */
+                overflow: auto;
+                scrollbar-width: none; /* For Firefox */
+                -ms-overflow-style: none;  /* For Internet Explorer and Edge */
+            }
+            /* Trash this eventually, want header and footer to stay in place "over" the body eventually. */
+            .content::-webkit-scrollbar { /* For Chrome, Safari, and Opera */
+                display: none;
             }
 
             .footer {
