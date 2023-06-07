@@ -1,6 +1,6 @@
-use rocket::serde::json::{Value, json};
+use rocket::serde::json::{Value};
 use rocket::response::Redirect;
-use rocket::response::content::RawHtml;
+//use rocket::response::content::RawHtml;
 use rocket::form::Form;
 use serde::Serialize;
 use rocket::http::{Cookie, CookieJar, SameSite};
@@ -17,7 +17,7 @@ pub struct LoginCredentials {
 pub async fn login(flash: Option<FlashMessage<'_>>) -> Template {
     Template::render("login", context!{flash})
 }
-
+ 
 #[post("/", data = "<user_input>")]
 pub async fn process_login(user_input: Form<LoginCredentials>, jar: &CookieJar<'_>) -> Result<Redirect, Value> {
     let mut my_url : reqwest::Url = reqwest::Url::parse("http://back/users/session").unwrap();
@@ -63,7 +63,7 @@ pub async fn process_login(user_input: Form<LoginCredentials>, jar: &CookieJar<'
                 _ =>Err(serde_json::from_str(back_end_response.text().await.unwrap().as_str()).unwrap()),
             }
         }
-        Err(e) => Err(serde_json::from_str(e.to_string().as_str()).unwrap()),
+        Err(e) => Err(serde_json::from_str(e.to_string().as_str()).unwrap()), //boom
     }
 }
 

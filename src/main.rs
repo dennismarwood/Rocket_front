@@ -38,7 +38,7 @@ fn rocket() -> _ { //Built the rocket here
         .mount("/user", routes![get_user, patch_user, update_pw_template, process_pw_update, list_all_users, get_user_by_id, patch_user_by_id, delete_user,])
         //.register("/user", catchers![user_401])
         .mount("/session", routes![session::login, session::process_login, session::logout])
-        .mount("/post", routes![post::new_post])
+        .mount("/post", routes![post::new_post, post::existing_post])
         .mount("/forwards_example", routes![])
         .attach(Template::fairing())
         //.register("/", catchers![default_catcher])

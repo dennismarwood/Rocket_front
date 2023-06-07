@@ -190,7 +190,6 @@ pub mod routes {
 
     #[get("/")]
     pub async fn get_user(jar: &CookieJar<'_>) -> Result<Template, Flash<Redirect>> {
-
         let mut target_url : reqwest::Url = reqwest::Url::parse("http://back/users").unwrap();
         target_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
 
