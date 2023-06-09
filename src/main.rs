@@ -14,6 +14,8 @@ mod post;
 
 mod catchers;
 
+mod common;
+
 
 #[get("/")]
 fn index() -> Result<Template, String > {
