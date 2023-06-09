@@ -6,7 +6,7 @@ use rocket::form::{Form, Context, Contextual};
 
 use crate::models::{PasswordUpdate, Response, UserUpdates, UserWithoutPHC};
 
-pub mod routes {
+
     use reqwest::header::CONTENT_TYPE;
 
     use super::*;
@@ -285,4 +285,3 @@ pub mod routes {
             }
         }
     }
-}
