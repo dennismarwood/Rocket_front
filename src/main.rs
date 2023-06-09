@@ -5,6 +5,7 @@ extern crate reqwest;
 extern crate tera;
 
 mod session;
+mod models;
 
 mod user;
 use user::routes::*;

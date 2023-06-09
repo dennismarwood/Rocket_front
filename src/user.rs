@@ -1,69 +1,10 @@
 use rocket::serde::json::{Value};
 use rocket::response::{Redirect, Flash};
-use serde::{Serialize, Deserialize};
 use rocket::http::{CookieJar};
 use rocket_dyn_templates::{Template, context};
 use rocket::form::{Form, Context, Contextual};
-/*
-{"data":
-    {"active":true,
-    "created":"2022-08-29T01:32:11",
-    "email":"dennismarwood@gmail.com",
-    "first_name":"Dennis",
-    "id":1,
-    "last_access":"2023-05-20",
-    "last_name":"Marwood",
-    "role":1
-},"status":"Success"}
-*/
-//#[derive(FromForm, Serialize)]
-//pub struct 200_Response
-#[derive(FromForm, Serialize, Deserialize, Debug)]
-pub struct User {
-    pub email : Option<String>,
-    pub pass :Option<String>, // Must be labled phc for diesel but this will initially be the user's new password
-    pub first_name: Option<String>,
-    pub last_name: Option<String>,
-    pub role: Option<i32>,
-    pub active: Option<bool>,
-}
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UserWithoutPHC {
-    pub id: i32,
-    pub email: String,
-    pub first_name: Option<String>,
-    pub last_name: Option<String>,
-    pub created: Option<String>,
-    pub role: i32,
-    pub active: Option<bool>,
-    pub last_access: Option<String>,
-}
-#[derive(Serialize, Deserialize, Debug)]
-struct Response {
-    pub status: String,
-    pub message: Option<String>,
-    pub location: Option<String>,
-    pub data: Option<serde_json::Value>,
-    pub code: Option<String>,
-    pub errors: Option<serde_json::Value>,
-}
 
-#[derive(FromForm, Serialize, Deserialize)]
-pub struct UserUpdates {
-    pub first_name: Option<String>,
-    pub last_name: Option<String>,
-    pub email: Option<String>,
-    pub phc: Option<String>,
-    pub active: Option<bool>,
-}
-
-#[derive(FromForm, Serialize, Debug)]
-pub struct PasswordUpdate<'r> {
-    pub current_password:  &'r str,
-    pub new_password: &'r str,
-    #[field(validate = eq(self.new_password))]
-    pub new_password_confirm:  &'r str,
-}
+use crate::models::{PasswordUpdate, Response, UserUpdates, UserWithoutPHC};
 
 pub mod routes {
     use reqwest::header::CONTENT_TYPE;
