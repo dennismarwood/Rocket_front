@@ -3,7 +3,7 @@ use rocket::response::{Redirect, Flash};
 use rocket::http::{CookieJar};
 use rocket_dyn_templates::{Template, context};
 use rocket::form::{Form, Context, Contextual};
-use crate::requests::{ProcessError};
+use crate::errors::{ProcessError};
 
 use crate::post::{get_exisiting_post, GetExisitingPostError};
 use crate::models::{PasswordUpdate, Response, UserUpdates, UserWithoutPHC};

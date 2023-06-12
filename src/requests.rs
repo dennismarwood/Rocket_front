@@ -1,22 +1,13 @@
 use serde::de::DeserializeOwned;
-use url::{Url, ParseError};
+use url::{Url};
 use crate::models::{Response};
 use crate::common::{reqwest_client};
 use rocket::http::{CookieJar};
-use thiserror::Error;
-use crate::models::{ResponseError};
+use crate::errors::{ResponseError, ProcessError, BuildUrlError};
 
 /*
     Requests to the back end should be fired from this module.
 */
-
-#[derive(Error, Debug)]
-pub enum BuildUrlError {
-    #[error("Setting port value of '{0}' caused the Url to have an invalid base.")]
-    BadPortValue(u16),
-    #[error(transparent)]
-    ParseError(#[from] ParseError),
-}
 
 pub fn build_url(path: &str) -> Result<Url, BuildUrlError> {
     const TARGET: &'static str = "http://back/api/";
@@ -27,20 +18,6 @@ pub fn build_url(path: &str) -> Result<Url, BuildUrlError> {
     url.set_port(Some(PORT)).map_err(|_| BuildUrlError::BadPortValue(PORT))?;
     
     Ok(url)
-}
-
-#[derive(Error, Debug)]
-pub enum ProcessError {
-    #[error("Received bad response: {0}")]
-    BadResponse(reqwest::StatusCode),
-    #[error(transparent)]
-    BuildUrlError(#[from] BuildUrlError),
-    #[error(transparent)]
-    ResponseError(#[from] ResponseError),
-    #[error(transparent)]
-    SerdeError(#[from] serde_json::Error),
-    #[error(transparent)]
-    ReqwestError(#[from] reqwest::Error),
 }
 
 pub async fn get_and_process_data<T: DeserializeOwned>(jar: &CookieJar<'_>, path: &str) -> Result<T, ProcessError> {

@@ -3,8 +3,8 @@ use rocket_dyn_templates::{Template, context};
 //use rocket::form::{Context};
 use crate::models::{Post, PostAndTag};
 use thiserror::Error;
-
-use crate::requests::{get_and_process_data, ProcessError};
+use crate::errors::{ProcessError};
+use crate::requests::{get_and_process_data};
 
 #[derive(Error, Debug)]
 pub enum GetExisitingPostError {

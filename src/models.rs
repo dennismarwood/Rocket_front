@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 use serde::de::DeserializeOwned;
-use thiserror::Error;
+use crate::errors::{ResponseError};
 
 #[derive(FromForm, Serialize, Deserialize, Debug)]
 pub struct User {
@@ -52,15 +52,7 @@ impl Response {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum ResponseError {
-    #[error("The response from the back end did not include the expected data field.")]
-    NoDataField,
-    #[error(transparent)]
-    SerdeError(#[from] serde_json::Error),
-    #[error(transparent)]
-    ReqwestError(#[from] reqwest::Error),
-}
+
 
 #[derive(FromForm, Serialize, Deserialize)]
 pub struct UserUpdates {

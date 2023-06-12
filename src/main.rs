@@ -20,6 +20,8 @@ mod common;
 
 mod requests;
 
+mod errors;
+
 #[get("/")]
 fn index() -> Result<Template, String > {
     Ok(Template::render("post", context!{}))
