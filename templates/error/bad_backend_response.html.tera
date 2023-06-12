@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Whoops...</title>
+  </head>
+  <body>
+    <h1> :( </h1> 
+    <h2>Our apologies but something unexpected happend and we could not complete this request.</h2> 
+    <p>This error was caused by us, <i>not</i> from your use of this application. Please navigate back home and try your request again.</p>
+    {% if response %} <p> ({{response}}) </p> {% endif %}
+  </body>
+</html>
