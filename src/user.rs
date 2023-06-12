@@ -3,7 +3,9 @@ use rocket::response::{Redirect, Flash};
 use rocket::http::{CookieJar};
 use rocket_dyn_templates::{Template, context};
 use rocket::form::{Form, Context, Contextual};
+use crate::requests::{ProcessError};
 
+use crate::post::{get_exisiting_post, GetExisitingPostError};
 use crate::models::{PasswordUpdate, Response, UserUpdates, UserWithoutPHC};
 use crate::common::*;
 
@@ -88,6 +90,28 @@ pub async fn get_user_by_id(id: i32, jar: &CookieJar<'_>) -> Result<Template, Fl
             Ok(Template::render("error/500", context! {response}))
         }
     }
+}
+
+#[get("/post/<id>")]
+pub async fn existing_post(id: i32, jar: &CookieJar<'_>) -> Template {
+    match get_exisiting_post(id, jar).await {
+        Ok(_p) => Template::render("edit_post", context!{}),
+        Err(e@GetExisitingPostError::EmptyVec) => Template::render("error/bad_backend_response", context! {response: e.to_string()}),
+        Err(GetExisitingPostError::ParseError(e)) =>
+            match e {
+                ProcessError::BadResponse(sc) => 
+                match sc.as_u16() {
+                    404 => Template::render("error/404", context!{}),
+                    _ => Template::render("error/bad_backend_response", context! {response: sc.as_str()})
+                }                
+                _ => Template::render("error/bad_backend_response", context! {response: e.to_string()}),
+            }
+    }
+}
+
+#[get("/post", rank=1)]
+pub async fn new_post(jar: &CookieJar<'_>) -> Template {
+    todo!();
 }
 
 #[get("/")]
