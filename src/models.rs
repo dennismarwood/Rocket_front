@@ -1,4 +1,6 @@
 use serde::{Serialize, Deserialize};
+use serde::de::DeserializeOwned;
+use thiserror::Error;
 
 #[derive(FromForm, Serialize, Deserialize, Debug)]
 pub struct User {
@@ -30,6 +32,36 @@ pub struct Response {
     pub errors: Option<serde_json::Value>,
 }
 
+impl Response {
+    pub async fn get_data<T: DeserializeOwned>(r: reqwest::Response) -> Result<T, ResponseError> {
+        //Expect a response from the back end to include Some(serde::Value) in the Response.data field.
+        
+        //Convert response from the back end into a Response struct.
+        let resp: Self = r.json::<Self>().await.map_err(|e| ResponseError::ReqwestError(e))?;
+
+        //Extract serde Value from the Response.data field.
+        let data = match resp.data {
+            Some(data) => data,
+            None => return Err(ResponseError::NoDataField) //The optional data field is not present.
+        };
+
+        //Return a Value or return the serde error.
+        let deserialized_data: T = serde_json::from_value(data).map_err(ResponseError::SerdeError)?;
+
+        Ok(deserialized_data)
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum ResponseError {
+    #[error("The response from the back end did not include the expected data field.")]
+    NoDataField,
+    #[error(transparent)]
+    SerdeError(#[from] serde_json::Error),
+    #[error(transparent)]
+    ReqwestError(#[from] reqwest::Error),
+}
+
 #[derive(FromForm, Serialize, Deserialize)]
 pub struct UserUpdates {
     pub first_name: Option<String>,
@@ -47,7 +79,7 @@ pub struct PasswordUpdate<'r> {
     pub new_password_confirm:  &'r str,
 }
 
-#[derive(Serialize, Deserialize, Default, Debug)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct Post {
     pub id: Option<i32>,
     pub title: Option<String>,
@@ -55,11 +87,16 @@ pub struct Post {
     pub created: Option<chrono::NaiveDateTime>,
     pub last_updated: Option<chrono::NaiveDate>,
     pub content: Option<String>,
-    pub tag: Option<Vec<Tag>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Tag {
     pub id: i32,
     pub name: String,
+}
+
+#[derive(Serialize, Deserialize, Default, Clone, Debug)]
+pub struct PostAndTag {
+    pub post: Post,
+    pub tags: Vec<Tag>, 
 }
