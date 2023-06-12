@@ -176,7 +176,7 @@
                 <hr>
             </div>
         {% endblock header %}
-        <div class="content">Content
+        <div class="content">
             {% if flash %}<div>{{ flash["message"] }}</div> {% endif %}
             {% block content %}{% endblock content %}
         </div>
