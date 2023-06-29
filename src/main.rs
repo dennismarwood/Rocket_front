@@ -3,6 +3,7 @@ extern crate rocket_dyn_templates;
 use rocket_dyn_templates::{Template, context};
 extern crate reqwest;
 extern crate tera;
+
 extern crate url;
 
 mod session;
@@ -21,6 +22,11 @@ mod common;
 mod requests;
 
 mod errors;
+
+mod tera_custom;
+use tera_custom::*;
+
+//mod tag;
 
 #[get("/")]
 fn index() -> Result<Template, String > {
@@ -43,12 +49,14 @@ pub async fn blog() -> Result<String, String> {
 fn rocket() -> _ { //Built the rocket here
     rocket::build()
         .mount("/", routes![index, blog])
-        .mount("/user", routes![get_user, patch_user, update_pw_template, process_pw_update, list_all_users, get_user_by_id, patch_user_by_id, delete_user, existing_post, new_post])
+        .mount("/user", routes![get_user, patch_user, update_pw_template, process_pw_update, list_all_users, get_user_by_id, patch_user_by_id, delete_user, existing_post, new_post, process_post])
         //.register("/user", catchers![user_401])
         .mount("/session", routes![session::login, session::process_login, session::logout])
         .mount("/post", routes![post::new_post, post::existing_post])
         .mount("/forwards_example", routes![])
-        .attach(Template::fairing())
+        .attach(Template::custom(|engine| {
+            engine.tera.register_tester("my_odd", testers::my_odd())
+        }))
         .register("/", catchers![not_found])
         .register("/post", catchers![post_not_found])
         //.register("/udemy/2/5", catchers![not_found, unauthorized, unprocessable_entity])
