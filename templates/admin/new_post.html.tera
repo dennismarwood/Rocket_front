@@ -1,0 +1,43 @@
+{% extends "base" %}
+{% block title %}Create a new blog post{% endblock title %}
+{% block head %}
+    {{ super() }}
+    <style>
+        select {
+            width: 5em;
+        }
+    </style>
+{% endblock head %}
+{% block content %}
+    <h1>Create a new blog post.</h1>
+    <form action="/user/post" method="post">
+        {% if bad_pw %}<br>The current account password was incorrect.<br><br>{% endif %}
+        <label for="title">Title:</label>
+        <input 
+            id="title" 
+            name="title" 
+            required
+        ><br>
+        <div style="display: flex; align-items: flex-start;">
+            <label style="margin-right: .5em;">Tags:</label>
+            <select name="tags[]" id="tags[]" multiple>
+                {% if available_tags %}
+                    {% for t in available_tags %}          
+                        <option> {{t.name}} </option>
+                    {% endfor %}
+                {% endif %}
+            </select> 
+        </div>
+        <br>
+        <label for="content">Content:</label><br>
+        <textarea id="content" name="content" rows="40" cols="100"></textarea><br>
+
+        {#<input type="hidden" id="id" name="id" value="{{ pat.post.id }}" />
+        <input type="hidden" id="author" name="author" value="{{ pat.post.author }}" />
+        <input type="hidden" id="created" name="created" value="{{ pat.post.created }}" />
+        <input type="hidden" id="last_updated" name="last_updated" value="{{ pat.post.last_updated }}" /> #}
+
+        <input type="submit" value="Submit">
+        
+    </form>
+{% endblock content %}
