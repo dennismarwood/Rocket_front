@@ -1,6 +1,7 @@
 use rocket::http::{CookieJar};
+use crate::errors::{BuildRequestClientError};
 
-pub fn reqwest_client<'a>(jar: &CookieJar<'_>) -> Result<reqwest::Client, reqwest::Error> {
+pub fn reqwest_client<'a>(jar: &CookieJar<'_>) -> Result<reqwest::Client, BuildRequestClientError> {
     /*
     Take the cookies from the front end request and add them to a new reqwest client
     that will talk to the back end.
@@ -35,4 +36,5 @@ pub fn reqwest_client<'a>(jar: &CookieJar<'_>) -> Result<reqwest::Client, reqwes
     .default_headers(headers)
     .cookie_store(true)
     .build()
+    .map_err(BuildRequestClientError::ReqwestError)
 }
