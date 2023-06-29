@@ -20,7 +20,7 @@ pub async fn login(flash: Option<FlashMessage<'_>>) -> Template {
  
 #[post("/", data = "<user_input>")]
 pub async fn process_login(user_input: Form<LoginCredentials>, jar: &CookieJar<'_>) -> Result<Redirect, Value> {
-    let mut my_url : reqwest::Url = reqwest::Url::parse("http://back/users/session").unwrap();
+    let mut my_url : reqwest::Url = reqwest::Url::parse("http://back/api/users/session").unwrap();
     my_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
 
     //let client = reqwest::Client::new();
