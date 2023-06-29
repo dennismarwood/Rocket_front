@@ -159,7 +159,7 @@
                 <div class="left">
                     <span class="dot"></span>
                     <div class="name">Dennis Marwood</div>
-                    <div class="specialty">A developer with a focus on the function over the form</div>
+                    <div class="specialty">Blurb</div>
                 </div>
                 <div class="right">
                     <div class="nav_container">
@@ -177,7 +177,13 @@
             </div>
         {% endblock header %}
         <div class="content">
-            {% if flash %}<div>{{ flash["message"] }}</div> {% endif %}
+            {% if messages %}
+                <div style="padding: 1em; border-style: solid; border-width: thin;">
+                    {% for m in messages %}
+                        {{ m }}
+                    {% endfor %}
+                </div>
+            {% endif %}
             {% block content %}{% endblock content %}
         </div>
         <div class="footer">
@@ -186,7 +192,13 @@
             <div class="foot_entry">Built with <a href="http://Rocket.rs">Rocket</a> and <a href="https://tera.netlify.app/">Tera</a>.</div>
             <div class="foot_entry">&copy; Copyright 2023 <a href="http://about.dennismarwood.com/">DennisMarwood.com</a></div>
             <div class="foot_entry">Navigate to your <a href="/user">profile</a>.</div>
-            <div class="foot_entry"><a href="/session/logout">Log in/out</a></div>
+            <div class="foot_entry">
+                {% if user %}
+                <a href="/session/logout">Log out</a>
+                {% else %}
+                <a href="/session/login">Log in</a>
+                {% endif %}
+            </div>
             {% endblock footer %}
         </div>
     </div>
