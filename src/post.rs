@@ -1,7 +1,7 @@
 use rocket::http::{CookieJar};
 use rocket_dyn_templates::{Template, context};
 //use rocket::form::{Context};
-use crate::models::{Post, PostAndTag};
+use crate::models::{PostAndTag};
 use thiserror::Error;
 use crate::errors::{GetAndProcessError, DecipherResponseError};
 use crate::requests::{get_and_process_data};

@@ -1,6 +1,6 @@
 use thiserror::Error;
 use url::ParseError;
-use serde::{Serialize, Deserialize};
+//use serde::{Serialize, Deserialize};
 
 #[derive(Error, Debug)]
 pub enum BuildRequestClientError {
