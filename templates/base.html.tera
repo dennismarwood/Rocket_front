@@ -3,7 +3,7 @@
 <head>
     {% block head %}
     {# <link rel="stylesheet" href="style.css" /> #}
-    <title>{% block title %}{% endblock title %} User </title>
+    <title>{% block title %}{% endblock title %}</title>
     <style>
 
         a {
@@ -180,7 +180,7 @@
             {% if messages %}
                 <div style="padding: 1em; border-style: solid; border-width: thin;">
                     {% for m in messages %}
-                        {{ m }}
+                        {{ m | safe}}
                     {% endfor %}
                 </div>
             {% endif %}

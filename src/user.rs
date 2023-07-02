@@ -1,4 +1,4 @@
-use rocket::serde::json::{Value, Json};
+//use rocket::serde::json::{Value, Json};
 use rocket::response::{Redirect, Flash};
 use rocket::http::{CookieJar};
 use rocket_dyn_templates::{Template, context};
@@ -11,15 +11,18 @@ use crate::common::{reqwest_client};
 use std::collections::HashMap;
 use crate::post::{get_exisiting_post, GetExisitingPostError};
 use crate::models::{PasswordUpdate, Response, UserUpdates, UserWithoutPHC, Tag};
-use crate::{common::*, blog};
+//use crate::{common::*, blog};
 
-use reqwest::header::CONTENT_TYPE;
+//use reqwest::header::CONTENT_TYPE;
 
 #[get("/update_pw")]
 pub async fn update_pw_template()-> Template {
     Template::render("update_pw", &Context::default())
 }
 
+/**
+ Verify new pw fields match. Confirm existing pw is correct. Set user's pw to updated value. 
+*/
 #[post("/process_pw_update", data = "<pw_update>")]
 pub async fn process_pw_update<'a>(pw_update: Form<Contextual<'a, PasswordUpdate<'_>>>, jar: &CookieJar<'_>) -> Result<Redirect, Template> {
     //If form was valid
@@ -29,7 +32,8 @@ pub async fn process_pw_update<'a>(pw_update: Form<Contextual<'a, PasswordUpdate
             Ok(sc) => {
                 match sc {
                     204 => (),
-                    401 => return Err(Template::render("update_pw", context!{bad_pw: "bad_pw",})),
+                    401 => return Err(Template::render("update_pw", context!{messages: 
+                        ["The current account password you entered was incorrect.<br>Password <b>not</b> updated."]})),
                     _ => return Err(Template::render("error/bad_backend_response", context! {response: sc})),
                 }
             },
@@ -40,7 +44,7 @@ pub async fn process_pw_update<'a>(pw_update: Form<Contextual<'a, PasswordUpdate
             Ok(None) => return Ok(Redirect::to("/user")),
             Ok(Some(r)) => {
                 match r.status_code {
-                    Some(401) => return Err(Template::render("update_pw", context!{bad_pw: "bad_pw",})),
+                    Some(401) => return Err(Template::render("update_pw", context!{})),
                     _ => {
                         let e = r.errors.unwrap_or("Expected error not present".into()).to_string();
                         return Err(Template::render("error/bad_backend_response", context! {response: e}))
@@ -168,8 +172,7 @@ pub async fn get_user(jar: &CookieJar<'_>) -> Result<Template, Flash<Redirect>> 
 pub async fn patch_user(user_input: Form<UserUpdates>, jar: &CookieJar<'_>) -> Template {
     match patch_value(jar, "users", user_input.into_inner()).await {
         Ok(None) => Template::render("user", context! {}),
-        //Ok(r) => Err(Template::render("error/bad_backend_response", context! {response: r})),//non 200 response
-        Ok(Some(r)) => {println!("xxx");
+        Ok(Some(r)) => {
             match r.status_code {
                 Some(401) => {println!("401--"); Template::render("login", context! {messages: ["You must be logged in to edit a user profile."]})},
                 Some(403) => Template::render("post", context! {messages: ["You lack necessary privileges to access that page."]}),
@@ -178,48 +181,8 @@ pub async fn patch_user(user_input: Form<UserUpdates>, jar: &CookieJar<'_>) -> T
                     Template::render("error/bad_backend_response", context! {response: e})
                 }
             }},
-        Err(e) => {println!("HERE"); Template::render("error/bad_backend_response", context! {response: e.to_string()})},
-        //     GetAndProcessError::DecipherResponseError(e) => 
-        //         match e {
-        //             DecipherResponseError::UnexpectedResponseCode(sc) => 
-        //                 match sc {
-        //                     reqwest::StatusCode::UNAUTHORIZED=> return Template::render("login", context! {messages: ["You must be logged in to edit a user profile."]}),
-        //                     reqwest::StatusCode::FORBIDDEN => return Template::render("post", context! {messages: ["You lack necessary privileges to access that page."]}),
-        //                     _ => return Template::render("error/bad_backend_response", context! {response: sc.as_str()})
-        //                 }
-        //         },
-        //     _ => return Template::render("error/bad_backend_response", context! {response: e.to_string()}),
-        // }
-        // Err(e) => Err(Template::render("error/bad_backend_response", context! {response: e.to_string()})),
+        Err(e) => Template::render("error/bad_backend_response", context! {response: e.to_string()}),
     }
-    
-    // let mut target_url : reqwest::Url = reqwest::Url::parse("http://back/api/users").unwrap();
-    // target_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
-
-    // let my_client = reqwest_client(jar).unwrap();
-    // match my_client.patch(target_url)
-    //     .json(&user_input.into_inner())
-    //     .send()
-    //     .await{
-    //     Ok(response) => {
-    //         match response.status() 
-    //         {
-    //             reqwest::StatusCode::NO_CONTENT => {
-    //                 Ok(Redirect::to("/user"))
-    //             }
-    //             reqwest::StatusCode::UNAUTHORIZED => {
-    //                 Ok(Redirect::to("/session/login"))
-    //             }
-    //             _ => {
-    //                 Err(Template::render("error/500", context! {response: response.status().as_u16()}))
-    //             }
-    //         }
-    //     },
-    //     Err(e) => {
-    //         let response = e.to_string();
-    //         Err(Template::render("error/500", context! {response}))
-    //     }
-    // }
 }
 
 #[post("/patch_user/<id>", data = "<user_input>")]
