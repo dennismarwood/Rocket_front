@@ -36,8 +36,6 @@ pub struct Response {
 
 impl Response {
     pub async fn new(r: reqwest::Response) -> Result<Self, ResponseError> {
-        println!("{:?}", r.text().await);
-        todo!();
         let status_code = r.status().as_u16();
         let mut response = r.json::<Self>().await.map_err(|e| ResponseError::DeserializeError(e))?;
         response.status_code = Some(status_code);
