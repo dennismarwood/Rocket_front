@@ -95,7 +95,7 @@
 
     {% if user["role"] == 1 %} <div> Alter other user's data <a href="/user/list_all_users">here</a>. </div>{% endif %}
 
-    <p><a href="/post/new_post">Create</a> a new post.</p>
+    <p><a href="user/post">Create</a> a new post.</p>
     <p><a href="/post/create">Update or delete</a> an existing post.</p>
     <p><a href="/post/create">Manage</a> tags.</p>
     
