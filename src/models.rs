@@ -23,7 +23,7 @@ pub struct UserWithoutPHC {
     pub active: Option<bool>,
     pub last_access: Option<String>,
 }
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Response {
     pub status: String,
     pub message: Option<String>,
@@ -36,9 +36,29 @@ pub struct Response {
 
 impl Response {
     pub async fn new(r: reqwest::Response) -> Result<Self, ResponseError> {
+        /*
+        Always return a Response struct. No matter what the structure of backend response.
+        A response could 
+            Have a body
+                That should be JSON type.
+            Have no body
+                That should typically be a 204.
+         */
         let status_code = r.status().as_u16();
-        let mut response = r.json::<Self>().await.map_err(|e| ResponseError::DeserializeError(e))?;
+        let r_body = r.text().await?;
+        println!("HERE IS BODY FROM BACKEND: {}", r_body);
+        //Does it have a body?
+        let mut response = match r_body.is_empty() {
+            //Body, then assume back end is sending content type of json and make a Response. Error if it is not properly formated json.
+            false => serde_json::from_str::<Self>(&r_body).map_err(|e| ResponseError::SerdeError(e))?,
+
+            //No body, can't deserialize a Response. Assume this is a success because an error should have a body in the response from the back end.
+            true => Self{status: String::from("Success"), ..Default::default()},
+        };
+
+        //let mut response = r.json::<Self>().await.map_err(|e| ResponseError::DeserializeError(e))?;
         response.status_code = Some(status_code);
+        println!("Generated Response");
         Ok(response)
     }
 
@@ -106,6 +126,16 @@ pub struct PostForm {
     pub last_updated: Option<String>,
     pub content: Option<String>,
     pub tags: Option<Vec<String>>,
+}
+
+#[derive(Serialize, Deserialize, Default, Clone, Debug, FromForm)]
+pub struct NewTagForm {
+    pub name: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct NewTag {
+    pub name: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

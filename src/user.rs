@@ -1,5 +1,6 @@
 //use rocket::serde::json::{Value, Json};
-use rocket::response::{Redirect};
+use rocket::response::{Redirect, Flash};
+use rocket::request::{FlashMessage};
 use rocket::http::{CookieJar};
 use rocket_dyn_templates::{Template, context};
 use rocket::form::{Form, Context, Contextual};
@@ -41,9 +42,9 @@ pub async fn process_pw_update<'a>(pw_update: Form<Contextual<'a, PasswordUpdate
         }
         //Update user password
         match patch_value(jar, "users", HashMap::from([("phc", value.new_password)])).await {
-            Ok(None) => return Ok(Redirect::to("/user")),
-            Ok(Some(r)) => {
+            Ok(r) => {
                 match r.status_code {
+                    Some(204) => return Ok(Redirect::to("/user")),
                     Some(401) => return Err(Template::render("update_pw", context!{})),
                     _ => {
                         let e = r.errors.unwrap_or("Expected error not present".into()).to_string();
@@ -130,9 +131,20 @@ pub async fn process_post(jar: &CookieJar<'_>, mut post_form: Form<PostForm>) ->
     match post.id {
         Some(_) => 
             match patch_value(jar, format!("posts/{}", &post_id).as_str(), post).await {
-                Ok(None) => Ok(Redirect::to(uri!("/user"))),
-                Ok(r) => Err(Template::render("error/bad_backend_response", context! {response: r})),
+                Ok(r) => {
+                    match r.status_code {
+                        Some(204) => return Ok(Redirect::to("/user")),
+                        _ => {
+                            let e = r.errors.unwrap_or("Expected error not present".into()).to_string();
+                            return Err(Template::render("error/bad_backend_response", context! {response: e}))
+                        },
+                    }
+                },
+
+                // Ok(None) => Ok(Redirect::to(uri!("/user"))),
+                // Ok(r) => Err(Template::render("error/bad_backend_response", context! {response: r})),
                 Err(e) => Err(Template::render("error/bad_backend_response", context! {response: e.to_string()})),
+                
             },
         None => 
             match post_value(jar, format!("posts{}", &post_id).as_str(), post).await {
@@ -152,9 +164,17 @@ pub async fn process_post(jar: &CookieJar<'_>, mut post_form: Form<PostForm>) ->
 }
 
 #[get("/")]
-pub async fn get_user(jar: &CookieJar<'_>) -> Template {
+pub async fn get_user(jar: &CookieJar<'_>, flash: Option<FlashMessage<'_>>) -> Template {
     match get_and_process_data::<UserWithoutPHC>(jar, &"users").await {
-        Ok(t) => return Template::render("user", context!{user: t}),
+        Ok(u) => {
+            let flash_message = flash.map(|f| [f.message().to_string()]);
+            let context = context!{
+                user: u,
+                messages: flash_message,
+            };
+            return Template::render("user", context);
+        }
+            
         Err(GetAndProcessError::DecipherResponseError(e)) => 
             match e {
                 DecipherResponseError::UnexpectedResponseCode(sc) => 
@@ -169,13 +189,14 @@ pub async fn get_user(jar: &CookieJar<'_>) -> Template {
 
 #[post("/patch_user", data = "<user_input>")]
 //Web forms have only get and post methods. The frontend will route to itself and then generate a patch request to the backend. 
-pub async fn patch_user(user_input: Form<UserUpdates>, jar: &CookieJar<'_>) -> Result<Redirect, Template> {
+pub async fn patch_user(user_input: Form<UserUpdates>, jar: &CookieJar<'_>) -> Result<Flash<Redirect>, Template> {
     match patch_value(jar, "users", user_input.into_inner()).await {
-        Ok(None) => Ok(Redirect::to("/user")),
-        Ok(Some(r)) => {
+        Ok(r) => {
             match r.status_code {
-                Some(401) => Err(Template::render("login", context! {messages: ["You must be logged in to edit a user profile."]})),
-                Some(403) => Err(Template::render("post", context! {messages: ["You lack necessary privileges to access that page."]})),
+                Some(204) => Ok(Flash::success(Redirect::to("/user"), format!("Updates applied."))),
+                Some(401) => Ok(Flash::error(Redirect::to("/user"), "You must be logged in to perform that action.")),
+                Some(403) => Ok(Flash::error(Redirect::to("/user"), "You lack necessary privileges to perform that action.")),
+                //Should never see a 404 because user must have session to update themselves.
                 _ => {
                     let e = r.errors.unwrap_or("Expected error not present".into()).to_string();
                     Err(Template::render("error/bad_backend_response", context! {response: e}))
@@ -187,14 +208,14 @@ pub async fn patch_user(user_input: Form<UserUpdates>, jar: &CookieJar<'_>) -> R
 
 #[post("/patch_user/<id>", data = "<user_input>")]
 //Web forms have only get and post methods. The frontend will route to itself and then generate a patch request to the backend. 
-pub async fn patch_user_by_id(id: i32, user_input: Form<UserUpdates>, jar: &CookieJar<'_>) -> Result<Redirect, Template> {
+pub async fn patch_user_by_id(id: i32, user_input: Form<UserUpdates>, jar: &CookieJar<'_>) -> Result<Flash<Redirect>, Template> {
     match patch_value(jar, format!("users/{}", &id).as_str(), user_input.into_inner()).await {
-        Ok(None) => Ok(Redirect::to("/user")),
-        Ok(Some(r)) => {
+        Ok(r) => {
             match r.status_code { 
-                Some(204) => Err(Template::render("user", context! {})),
-                Some(401) => Err(Template::render("login", context! {messages: ["You must be logged in to edit a user profile."]})),
-                Some(403) => Err(Template::render("user", context! {messages: ["You lack necessary privileges to update that user profile."]})),
+                Some(204) => Ok(Flash::success(Redirect::to("/user"), format!("Updated user: {}", id))),
+                Some(401) => Ok(Flash::error(Redirect::to("/user"), "You must be logged in to perform that action.")),
+                Some(403) => Ok(Flash::error(Redirect::to("/user"), "You lack necessary privileges to perform that action.")),
+                Some(404) => Err(Template::render("user", context! {messages: [format!("Failed to update user w/ id '{}' because that user could not be found.", id)]})),
                 _ => Err(Template::render("error/500", context! {response: r.status_code})),
             }
         },
@@ -211,35 +232,28 @@ pub async fn list_all_users(jar: &CookieJar<'_>) -> Result<Template, Redirect> {
                 match e {
                     DecipherResponseError::UnexpectedResponseCode(sc) => 
                         match sc {
-                            reqwest::StatusCode::UNAUTHORIZED=> return Ok(Template::render("login", context! {messages: ["You must be logged in to view a user profile."]})),
-                            reqwest::StatusCode::NOT_FOUND => return Ok(Template::render("post", context! {messages: ["You lack necessary privileges to access that page."]})),
+                            reqwest::StatusCode::UNAUTHORIZED=> return Ok(Template::render("login", context! {messages: ["You must be logged in to view that page."]})),
+                            reqwest::StatusCode::FORBIDDEN => return Ok(Template::render("post", context! {messages: ["You lack necessary privileges to access that page."]})),
                             _ => return Ok(Template::render("error/bad_backend_response", context! {response: sc.as_str()}))
                         }
                 },
             _ => return Ok(Template::render("error/bad_backend_response", context! {response: e.to_string()})),
         }
     };
-
 }
 
 #[delete("/<id>")]
-pub async fn delete_user(id: i32, jar: &CookieJar<'_>) -> Result<Redirect, Template> {
-    let mut target_url : reqwest::Url = reqwest::Url::parse(&format!("http://back/users/{}", id)).unwrap();
-    target_url.set_port(Some(8001)).map_err(|_| "cannot be base").unwrap();
-
-    let my_client = reqwest_client(jar).unwrap();
-    match my_client.delete(target_url).send().await{
-        Ok(response) => {
-            match response.status() 
-            {
-                reqwest::StatusCode::NO_CONTENT => Ok(Redirect::to("/user")),
-                //reqwest::StatusCode::NOT_FOUND => Ok(Redirect::to("/user")),
-                _ => Err(Template::render("error/500", context! {response: response.status().as_u16()})),
+pub async fn delete_user(id: i32, jar: &CookieJar<'_>) -> Result<Flash<Redirect>, Template> {
+    match crate::requests::delete(jar, format!("users/{}", &id).as_str()).await {
+        Ok(r) => {
+            match r.status_code { 
+                Some(204) => Ok(Flash::success(Redirect::to("/user"), format!("Deleted user: {}", id))),
+                Some(401) => Ok(Flash::error(Redirect::to("/user"), "You must be logged in to perform that action.")),
+                Some(403) => Ok(Flash::error(Redirect::to("/user"), "You lack necessary privileges to perform that action.")),
+                Some(404) => Err(Template::render("user", context! {messages: [format!("Failed to delete user w/ id '{}' because that user could not be found.", id)]})),
+                _ => Err(Template::render("error/500", context! {response: r.status_code})),
             }
-        }
-        Err(e) => {
-            let response = e.to_string();
-            Err(Template::render("error/500", context! {response}))
-        }
+        },
+        Err(e) => Err(Template::render("error/bad_backend_response", context! {response: e.to_string()})),
     }
 }

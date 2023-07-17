@@ -1,0 +1,34 @@
+{% extends "base" %}
+{% block title %}Tags{% endblock title %}
+{% block head %}
+    {{ super() }}
+    <style>
+        table {
+            border-collapse:separate; 
+            border-spacing: 1em;
+          }
+    </style>
+{% endblock head %}
+{% block content %}
+{{__tera_context}}
+    <form action="/tag" method="post">
+        <label for="new_tag">Create a new tag:</label>
+        <input 
+            id="name" 
+            name="name" 
+            required
+        >
+        <input type="submit" value="Submit">
+    </form>
+    {% if tags %}
+        <table>
+        {% for tag in tags %}
+                <tr>
+                    <td><a href = "/tags/{{ tag.id }}">{{ tag.id }}</a></td>
+                    <td>{{ tag.name }}</td>
+                </tr>
+        {% endfor %}
+        </table>
+    {% endif %}
+
+{% endblock content %}

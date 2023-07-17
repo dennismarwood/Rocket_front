@@ -30,7 +30,7 @@ pub fn build_url(path: &str) -> Result<Url, BuildUrlError> {
 /**
  Given a path to a backend resource,<br>
  Create and send a get request to backend,<br>
- Return Desirialized value from backend response's "data" field.<br>
+ Return Deserialized value from backend response's "data" field.<br>
  Any error encountered along the way will be returned instead.
  */
 pub async fn get_and_process_data<T: DeserializeOwned>(jar: &CookieJar<'_>, path: &str) -> Result<T, GetAndProcessError> {
@@ -88,7 +88,7 @@ pub async fn post_value_get_status_code<T: Serialize>(jar: &CookieJar<'_>, path:
 A <b>successful</b> patch will return Ok(None).<br>
 Any non 2xx reply will attempt to return Ok(Response).
 */
-pub async fn patch_value<T: Serialize>(jar: &CookieJar<'_>, path: &str, body: T) ->  Result<Option<Response>, PatchValueError> {
+pub async fn patch_value<T: Serialize>(jar: &CookieJar<'_>, path: &str, body: T) ->  Result<Response, PatchValueError> {
     //The back end should return a 204 and an empty body in a successful update.
     //A successfull operation will retun Ok(None)
     //If the back end returns a non 2xx response, return an Ok(Response)
@@ -101,13 +101,27 @@ pub async fn patch_value<T: Serialize>(jar: &CookieJar<'_>, path: &str, body: T)
     let r = client.patch(url).json(&body).send().await.map_err(|e| InitializeRequestError::RequestResponseError(e))?;
 
     //Expecting no body and a 204 status code
-    if !r.status().is_success() {
+    //if !r.status().is_success() {
         //A body is expected in a non 2xx response.
-        println!("FAIL");
-        println!("{}", r.status());
-        return Ok(Some(Response::new(r).await?));
-    }
+        return Ok(Response::new(r).await?);
+    //}
 
     //A successfull patch has no body.
-    Ok(None)
+    //Ok(None)
+}
+
+/** 
+ The back end will return a 204 (No Content), or a 404.
+
+ An Ok response will contain a response for a success or failure post attempt.
+ <br>OR<br>
+ An Error about intiating or deciphering a response.
+ */
+pub async fn delete(jar: &CookieJar<'_>, path: &str) ->  Result<Response, PostValueError> {
+    //Create request and url
+    let client = reqwest_client(jar).map_err(|e| InitializeRequestError::BuildRequestClientError(e))?;
+    let url = build_url(path).map_err(|e| InitializeRequestError::BuildUrlError(e))?;
+    //Send request
+    let r = client.delete(url).send().await.map_err(|e| InitializeRequestError::RequestResponseError(e))?;
+    Ok(Response::new(r).await?)
 }

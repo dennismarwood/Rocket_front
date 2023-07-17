@@ -97,7 +97,7 @@
 
     <p><a href="user/post">Create</a> a new post.</p>
     <p><a href="/post/create">Update or delete</a> an existing post.</p>
-    <p><a href="/post/create">Manage</a> tags.</p>
+    <p><a href="/tag">Manage</a> tags.</p>
     
 
     <div id="confirmUserDelete" style="display: none;">

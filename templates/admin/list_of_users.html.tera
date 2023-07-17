@@ -35,4 +35,5 @@
             </tr>
         {% endfor %}
     </table>
+    <a href = "/user/">Nevermind, take me back.</a>
 {% endblock content %}
