@@ -208,7 +208,9 @@ pub async fn patch_user(user_input: Form<UserUpdates>, jar: &CookieJar<'_>) -> R
 
 #[post("/patch_user/<id>", data = "<user_input>")]
 //Web forms have only get and post methods. The frontend will route to itself and then generate a patch request to the backend. 
-pub async fn patch_user_by_id(id: i32, user_input: Form<UserUpdates>, jar: &CookieJar<'_>) -> Result<Flash<Redirect>, Template> {
+pub async fn patch_user_by_id(id: i32, mut user_input: Form<UserUpdates>, jar: &CookieJar<'_>) -> Result<Flash<Redirect>, Template> {
+    //An empty pw field should not be included in the payload.
+    user_input.phc = user_input.phc.as_ref().filter(|s| !s.is_empty()).cloned();
     match patch_value(jar, format!("users/{}", &id).as_str(), user_input.into_inner()).await {
         Ok(r) => {
             match r.status_code { 
