@@ -81,7 +81,7 @@ impl Response {
 }
 
 
-#[derive(FromForm, Serialize, Deserialize)]
+#[derive(FromForm, Serialize, Deserialize, Debug)]
 pub struct UserUpdates {
     pub first_name: Option<String>,
     pub last_name: Option<String>,
